@@ -1,8 +1,9 @@
 {
   "manifest_version": 3,
-  "name": "WebSketch - 网页绘图助手",
+  "name": "__MSG_extensionName__",
   "version": "1.0.0",
-  "description": "在任意网页上绘图、标注、截图，支持对象级编辑与旋转",
+  "description": "__MSG_extensionDescription__",
+  "default_locale": "zh_CN",
   "permissions": [
     "activeTab",
     "storage",

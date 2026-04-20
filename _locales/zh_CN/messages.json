@@ -1,0 +1,10 @@
+{
+  "extensionName": {
+    "message": "绘影 - 网页绘图助手",
+    "description": "扩展名称"
+  },
+  "extensionDescription": {
+    "message": "在任意网页上绘图、标注、截图。支持画笔、形状、文字、对象级编辑与旋转功能。",
+    "description": "扩展描述"
+  }
+}

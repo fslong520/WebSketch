@@ -1,0 +1,10 @@
+{
+  "extensionName": {
+    "message": "HuiYing - Web Drawing Assistant",
+    "description": "Extension name"
+  },
+  "extensionDescription": {
+    "message": "Draw, annotate, and screenshot on any webpage. Supports brush, shapes, text, object-level editing and rotation.",
+    "description": "Extension description"
+  }
+}

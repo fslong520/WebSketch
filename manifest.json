@@ -1,0 +1,42 @@
+{
+  "manifest_version": 3,
+  "name": "WebSketch - 网页绘图助手",
+  "version": "1.0.0",
+  "description": "在任意网页上绘图、标注、截图，支持对象级编辑与旋转",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "downloads",
+    "scripting",
+    "tabs"
+  ],
+  "action": {
+    "default_icon": {
+      "16": "assets/icons/icon16.png",
+      "48": "assets/icons/icon48.png",
+      "128": "assets/icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "assets/icons/icon16.png",
+    "48": "assets/icons/icon48.png",
+    "128": "assets/icons/icon128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "css": ["content/content.css"],
+      "js": ["content/content.js"],
+      "run_at": "document_end"
+    }
+  ],
+  "background": {
+    "service_worker": "background/background.js"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["assets/*"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

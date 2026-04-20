@@ -1,0 +1,351 @@
+/**
+ * WebSketch - Content Styles
+ * 浮动工具栏样式
+ */
+
+#wph-toolbar {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  min-width: 280px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1);
+  font-family: -apple-system, BlinkMacSystemFont, "Microsoft YaHei", "PingFang SC", sans-serif;
+  z-index: 2147483648;
+  display: none;
+  user-select: none;
+  backdrop-filter: blur(10px);
+}
+
+.wph-toolbar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px 12px 0 0;
+  cursor: move;
+}
+
+.wph-title {
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.wph-close {
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  transition: all 0.2s;
+}
+
+.wph-close:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
+}
+
+.wph-toolbar-body {
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 0 0 12px 12px;
+}
+
+/* 工具按钮组 */
+.wph-tool-group {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.wph-tool {
+  width: 36px;
+  height: 36px;
+  border: 2px solid #e0e0e0;
+  background: #f8f9fa;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  color: #555;
+}
+
+.wph-tool:hover {
+  background: #e9ecef;
+  border-color: #adb5bd;
+}
+
+.wph-tool.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-color: #667eea;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+}
+
+/* 分隔线 */
+.wph-divider {
+  height: 1px;
+  background: linear-gradient(to right, transparent, #dee2e6, transparent);
+  margin: 12px 0;
+}
+
+/* 设置组 */
+.wph-setting-group,
+.wph-font-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.wph-label {
+  color: #495057;
+  font-size: 12px;
+  min-width: 40px;
+}
+
+.wph-color {
+  width: 32px;
+  height: 32px;
+  border: 2px solid #dee2e6;
+  border-radius: 8px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.wph-color::-webkit-color-swatch-wrapper {
+  padding: 2px;
+}
+
+.wph-color::-webkit-color-swatch {
+  border-radius: 4px;
+  border: none;
+}
+
+.wph-range,
+.wph-font-size {
+  width: 120px;
+  height: 4px;
+  border-radius: 2px;
+  background: #dee2e6;
+  appearance: none;
+  cursor: pointer;
+}
+
+.wph-range::-webkit-slider-thumb,
+.wph-font-size::-webkit-slider-thumb {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+}
+
+.wph-value {
+  color: #667eea;
+  font-size: 12px;
+  font-weight: 500;
+  min-width: 30px;
+}
+
+/* 操作按钮组 */
+.wph-action-group {
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.wph-action {
+  width: 36px;
+  height: 36px;
+  border: 2px solid #dee2e6;
+  background: #f8f9fa;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  color: #555;
+}
+
+.wph-action:hover {
+  background: #e9ecef;
+  border-color: #adb5bd;
+}
+
+.wph-action.wph-primary {
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  border-color: #28a745;
+  color: #fff;
+}
+
+.wph-action.wph-primary:hover {
+  background: linear-gradient(135deg, #34ce57 0%, #25d9a7 100%);
+  border-color: #34ce57;
+}
+
+/* 文字输入框 */
+#wph-text-input {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  animation: fadeIn 0.2s ease;
+}
+
+#wph-text-input:focus {
+  border-color: #667eea;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+#wph-text-input::placeholder {
+  color: #999;
+  font-style: italic;
+}
+
+/* 动画 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 提示气泡 */
+.wph-tool::after {
+  content: attr(title);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 8px;
+  background: #333;
+  color: #fff;
+  font-size: 11px;
+  border-radius: 4px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+
+.wph-tool:hover::after {
+  opacity: 1;
+}
+
+/* 图标按钮 */
+.wph-icon-btn {
+  width: 32px;
+  height: 32px;
+  border: 2px solid #dee2e6;
+  background: #f8f9fa;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  font-size: 16px;
+}
+
+.wph-icon-btn:hover {
+  background: #e9ecef;
+  border-color: #adb5bd;
+  transform: scale(1.05);
+}
+
+/* 预设颜色面板 */
+.wph-color-palette {
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.wph-color-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.wph-color-row:last-child {
+  margin-bottom: 0;
+}
+
+.wph-color-swatch {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 2px solid #dee2e6;
+  transition: all 0.2s;
+  display: block;
+}
+
+.wph-color-swatch:hover {
+  transform: scale(1.15);
+  border-color: #667eea;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.wph-color-swatch[data-color="#000000"] { background: #000000; }
+.wph-color-swatch[data-color="#ffffff"] { background: #ffffff; }
+.wph-color-swatch[data-color="#e74c3c"] { background: #e74c3c; }
+.wph-color-swatch[data-color="#e67e22"] { background: #e67e22; }
+.wph-color-swatch[data-color="#f1c40f"] { background: #f1c40f; }
+.wph-color-swatch[data-color="#2ecc71"] { background: #2ecc71; }
+.wph-color-swatch[data-color="#3498db"] { background: #3498db; }
+.wph-color-swatch[data-color="#9b59b6"] { background: #9b59b6; }
+.wph-color-swatch[data-color="#1abc9c"] { background: #1abc9c; }
+.wph-color-swatch[data-color="#e91e63"] { background: #e91e63; }
+
+/* 模式按钮组 */
+.wph-mode-group {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.wph-mode-btn {
+  flex: 1;
+  min-width: 80px;
+  padding: 8px 12px;
+  border: 2px solid #dee2e6;
+  background: #f8f9fa;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 12px;
+  font-weight: 500;
+  color: #555;
+  text-align: center;
+}
+
+.wph-mode-btn:hover {
+  background: #e9ecef;
+  border-color: #adb5bd;
+}
+
+.wph-mode-btn.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-color: #667eea;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+}

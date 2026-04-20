@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>网页绘图助手</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-container">
+    <header class="popup-header">
+      <div class="logo">
+        <svg viewBox="0 0 24 24" width="24" height="24">
+          <path fill="currentColor" d="M7 14c-1.66 0-3 1.34-3 3 0 1.31-1.16 2-2 2.92 1.22 2.49 2 4 2 2.21 0 4-1.79 4-4 0-1.66-1.34-3-3-3zm13.71-9.37l-1.34-1.34a.996.996 0 0 0-1.41 0L9 12.25 11.75 15l8.96-8.96a.996.996 0 0 0 0-1.41z"/>
+        </svg>
+      </div>
+      <h1>网页绘图助手</h1>
+    </header>
+    
+    <main class="popup-main">
+      <div class="status-card">
+        <div class="status-icon" id="status-icon">
+          <svg viewBox="0 0 24 24" width="32" height="32">
+            <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+          </svg>
+        </div>
+        <div class="status-text">
+          <span class="status-label" id="status-label">未启用</span>
+          <span class="status-desc" id="status-desc">点击下方按钮开启绘图模式</span>
+        </div>
+      </div>
+      
+      <button class="action-btn" id="toggle-btn">
+        <span class="btn-icon">
+          <svg viewBox="0 0 24 24" width="20" height="20">
+            <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+          </svg>
+        </span>
+        <span class="btn-text" id="btn-text">开启绘图</span>
+      </button>
+      
+      <div class="tips">
+        <h3>使用说明</h3>
+        <ul>
+          <li><kbd>B</kbd> 画笔 · <kbd>E</kbd> 橡皮擦</li>
+          <li><kbd>T</kbd> 文字 · <kbd>R</kbd> 矩形</li>
+          <li><kbd>C</kbd> 圆形 · <kbd>L</kbd> 直线</li>
+          <li><kbd>A</kbd> 箭头</li>
+          <li><kbd>Ctrl+Z</kbd> 撤销 · <kbd>Ctrl+Y</kbd> 重做</li>
+        </ul>
+      </div>
+    </main>
+    
+    <footer class="popup-footer">
+      <span>v1.0.0</span>
+      <span>支持中文输入 ✓</span>
+    </footer>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>

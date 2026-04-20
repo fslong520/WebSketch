@@ -1,0 +1,187 @@
+/**
+ * 网页绘图助手 - Popup Styles
+ */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  width: 300px;
+  font-family: -apple-system, BlinkMacSystemFont, "Microsoft YaHei", "PingFang SC", sans-serif;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+}
+
+.popup-container {
+  padding: 16px;
+}
+
+/* Header */
+.popup-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.logo {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+
+.popup-header h1 {
+  font-size: 16px;
+  color: #2c3e50;
+  font-weight: 600;
+}
+
+/* Main */
+.popup-main {
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+/* Status Card */
+.status-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.status-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #e9ecef;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6c757d;
+  transition: all 0.3s;
+}
+
+.status-icon.active {
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  color: #fff;
+}
+
+.status-text {
+  flex: 1;
+}
+
+.status-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #2c3e50;
+  transition: color 0.3s;
+}
+
+.status-label.active {
+  color: #28a745;
+}
+
+.status-desc {
+  display: block;
+  font-size: 12px;
+  color: #6c757d;
+  margin-top: 2px;
+}
+
+/* Action Button */
+.action-btn {
+  width: 100%;
+  padding: 14px 20px;
+  border: none;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.3s;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.5);
+}
+
+.action-btn.active {
+  background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
+}
+
+.action-btn.active:hover {
+  box-shadow: 0 6px 16px rgba(220, 53, 69, 0.5);
+}
+
+.btn-icon {
+  display: flex;
+  align-items: center;
+}
+
+/* Tips */
+.tips {
+  margin-top: 16px;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.tips h3 {
+  font-size: 13px;
+  color: #495057;
+  margin-bottom: 8px;
+}
+
+.tips ul {
+  list-style: none;
+  font-size: 12px;
+  color: #6c757d;
+}
+
+.tips li {
+  margin-bottom: 4px;
+}
+
+.tips kbd {
+  display: inline-block;
+  padding: 2px 6px;
+  background: #fff;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  font-size: 11px;
+  font-family: monospace;
+  color: #495057;
+}
+
+/* Footer */
+.popup-footer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  font-size: 11px;
+  color: #6c757d;
+}

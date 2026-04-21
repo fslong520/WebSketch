@@ -16,7 +16,7 @@
 
   const state = {
     enabled: false, tool: 'brush', color: '#e74c3c', lineWidth: 3,
-    fontSize: 18, fontFamily: 'Microsoft YaHei, sans-serif',
+    opacity: 1, fontSize: 18, fontFamily: 'Microsoft YaHei, sans-serif',
     isDrawing: false, startX: 0, startY: 0,
     history: [], historyIndex: -1, maxHistory: 50,
     fillEnabled: false, dashEnabled: false, gridEnabled: false,
@@ -285,6 +285,7 @@
     
     previewCtx.strokeStyle = state.color;
     previewCtx.lineWidth = state.lineWidth;
+    previewCtx.globalAlpha = state.opacity;
     
     if (state.dashEnabled) {
       previewCtx.setLineDash([10, 5]);
@@ -314,6 +315,7 @@
       previewCtx.stroke();
     }
     previewCtx.setLineDash([]);
+    previewCtx.globalAlpha = 1;
     
     // 绘制吸附指示器
     if (snapped.snapped) {
@@ -365,7 +367,8 @@
             <span class="wph-color-swatch" data-color="#e91e63"></span>
           </div>
         </div>
-        <div class="wph-setting-group"><label>粗细</label><input type="range" class="wph-range" min="1" max="50" value="${state.lineWidth}"><span class="wph-value">${state.lineWidth}</span></div>
+        <div class="wph-setting-group"><label>粗细</label><input type="range" class="wph-range" id="wph-line-width" min="1" max="50" value="${state.lineWidth}"><span class="wph-value" id="wph-line-width-value">${state.lineWidth}</span></div>
+        <div class="wph-setting-group"><label>透明</label><input type="range" class="wph-range" id="wph-opacity" min="0.1" max="1" step="0.1" value="${state.opacity}"><span class="wph-value" id="wph-opacity-value">${Math.round(state.opacity * 100)}%</span></div>
         <div class="wph-setting-group wph-font-group" style="display:none"><label>字号</label><input type="range" class="wph-font-size" min="12" max="72" value="${state.fontSize}"><span>${state.fontSize}px</span></div>
         <div class="wph-divider"></div>
         <div class="wph-mode-group">
@@ -421,7 +424,8 @@
         text: text,
         color: state.color,
         fontSize: state.fontSize,
-        fontFamily: state.fontFamily
+        fontFamily: state.fontFamily,
+        opacity: state.opacity
       });
       redrawCanvas();
       saveState();
@@ -477,9 +481,13 @@
       });
     });
     toolbar.querySelector('.wph-color').addEventListener('input', e => state.color = e.target.value);
-    toolbar.querySelector('.wph-range').addEventListener('input', e => {
+    toolbar.querySelector('#wph-line-width').addEventListener('input', e => {
       state.lineWidth = +e.target.value;
-      toolbar.querySelector('.wph-range + .wph-value').textContent = state.lineWidth;
+      toolbar.querySelector('#wph-line-width-value').textContent = state.lineWidth;
+    });
+    toolbar.querySelector('#wph-opacity').addEventListener('input', e => {
+      state.opacity = +e.target.value;
+      toolbar.querySelector('#wph-opacity-value').textContent = Math.round(state.opacity * 100) + '%';
     });
     toolbar.querySelector('.wph-font-size').addEventListener('input', e => {
       state.fontSize = +e.target.value;
@@ -657,6 +665,7 @@
       ctx.strokeStyle = obj.color;
       ctx.fillStyle = obj.color;
       ctx.lineWidth = obj.lineWidth || 3;
+      ctx.globalAlpha = obj.opacity !== undefined ? obj.opacity : 1;
       
       if (obj.dashEnabled) {
         ctx.setLineDash([10, 5]);
@@ -880,6 +889,7 @@
       ctx.strokeRect(bounds.x, bounds.y, bounds.width, bounds.height);
     }
     
+    ctx.globalAlpha = 1;
     ctx.restore();
   }
 
@@ -977,7 +987,8 @@
         type: state.tool === 'brush' ? 'freehand' : 'eraser',
         points: [{x: e.clientX, y: e.clientY}],
         color: state.color,
-        lineWidth: state.tool === 'eraser' ? state.lineWidth * 3 : state.lineWidth
+        lineWidth: state.tool === 'eraser' ? state.lineWidth * 3 : state.lineWidth,
+        opacity: state.opacity
       };
       state.objects.push(newPathObj);
     }
@@ -1125,6 +1136,7 @@
         height: ey - state.startY,
         color: state.color,
         lineWidth: state.lineWidth,
+        opacity: state.opacity,
         fillEnabled: state.fillEnabled,
         dashEnabled: state.dashEnabled
       });
@@ -1140,6 +1152,7 @@
         radiusY: ry,
         color: state.color,
         lineWidth: state.lineWidth,
+        opacity: state.opacity,
         fillEnabled: state.fillEnabled,
         dashEnabled: state.dashEnabled
       });
@@ -1153,6 +1166,7 @@
         y2: ey,
         color: state.color,
         lineWidth: state.lineWidth,
+        opacity: state.opacity,
         dashEnabled: state.dashEnabled
       });
       redrawCanvas();
@@ -1165,6 +1179,7 @@
         y2: ey,
         color: state.color,
         lineWidth: state.lineWidth,
+        opacity: state.opacity,
         dashEnabled: state.dashEnabled
       });
       redrawCanvas();
@@ -1309,7 +1324,8 @@
       radius: radius,
       number: state.counterNumber,
       color: state.color,
-      lineWidth: state.lineWidth
+      lineWidth: state.lineWidth,
+      opacity: state.opacity
     });
     
     state.counterNumber++; // 自动递增

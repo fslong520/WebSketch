@@ -375,6 +375,7 @@
           <button class="wph-mode-btn" id="wph-fill-btn" title="填充模式">🖌️ 填充</button>
           <button class="wph-mode-btn" id="wph-dash-btn" title="虚线模式">📐 虚线</button>
           <button class="wph-mode-btn" id="wph-grid-btn" title="网格辅助线">📏 网格</button>
+          <button class="wph-mode-btn" id="wph-reset-counter" title="重置计数为1">🔢 重置</button>
         </div>
         <div class="wph-divider"></div>
         <div class="wph-action-group">
@@ -529,6 +530,11 @@
       state.gridEnabled = !state.gridEnabled;
       toolbar.querySelector('#wph-grid-btn').classList.toggle('active', state.gridEnabled);
       drawGrid();
+    });
+    
+    toolbar.querySelector('#wph-reset-counter').addEventListener('click', () => {
+      state.counterNumber = 1;
+      showCopySuccessTip('计数已重置为 1');
     });
     
     toolbar.querySelector('#wph-screenshot').addEventListener('click', startScreenshot);

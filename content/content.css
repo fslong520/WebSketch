@@ -1,287 +1,255 @@
 /**
  * WebSketch - Content Styles
- * 浮动工具栏样式
  */
 
 #wph-toolbar {
+  --wph-bg: #f7f4ee;
+  --wph-panel: rgba(255, 252, 246, 0.96);
+  --wph-ink: #23211d;
+  --wph-muted: #7a756c;
+  --wph-line: rgba(40, 36, 30, 0.14);
+  --wph-accent: #c94f32;
+  --wph-accent-strong: #a93d25;
+  --wph-shadow: 0 18px 50px rgba(32, 27, 20, 0.22), 0 1px 0 rgba(255, 255, 255, 0.72) inset;
   position: fixed;
   top: 20px;
   right: 20px;
-  min-width: 280px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1);
-  font-family: -apple-system, BlinkMacSystemFont, "Microsoft YaHei", "PingFang SC", sans-serif;
-  z-index: 2147483648;
+  width: 292px;
+  background: var(--wph-bg);
+  border: 1px solid var(--wph-line);
+  border-radius: 10px;
+  box-shadow: var(--wph-shadow);
+  color: var(--wph-ink);
   display: none;
+  font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+  overflow: visible;
   user-select: none;
-  backdrop-filter: blur(10px);
+  z-index: 2147483648;
 }
 
 .wph-toolbar-header {
-  display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 12px 12px 0 0;
+  background: #2b2925;
+  border-radius: 9px 9px 0 0;
+  color: #fffaf1;
   cursor: move;
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 12px;
 }
 
 .wph-title {
-  color: #fff;
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: 0.5px;
+  font-size: 13px;
+  font-weight: 650;
 }
 
 .wph-close {
-  width: 24px;
-  height: 24px;
-  border: none;
-  background: rgba(255, 255, 255, 0.2);
-  color: #fff;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 6px;
+  color: #fffaf1;
   cursor: pointer;
+  display: flex;
   font-size: 16px;
+  height: 24px;
+  justify-content: center;
   line-height: 1;
-  transition: all 0.2s;
+  padding: 0;
+  transition: background 140ms ease-out, transform 140ms ease-out;
+  width: 24px;
 }
 
 .wph-close:hover {
-  background: rgba(255, 255, 255, 0.3);
-  transform: scale(1.1);
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.wph-close:active,
+.wph-tool:active,
+.wph-action:active,
+.wph-icon-btn:active,
+.wph-mode-btn:active {
+  transform: scale(0.96);
 }
 
 .wph-toolbar-body {
-  padding: 16px;
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 0 0 12px 12px;
+  background: var(--wph-panel);
+  border-radius: 0 0 9px 9px;
+  padding: 12px;
 }
 
-/* 工具按钮组 */
 .wph-tool-group {
-  display: flex;
+  display: grid;
   gap: 6px;
-  flex-wrap: wrap;
-  margin-bottom: 12px;
+  grid-template-columns: repeat(5, 1fr);
 }
 
-.wph-tool {
-  width: 36px;
-  height: 36px;
-  border: 2px solid #e0e0e0;
-  background: #f8f9fa;
+.wph-tool,
+.wph-action,
+.wph-icon-btn {
+  align-items: center;
+  background: #fffdf8;
+  border: 1px solid var(--wph-line);
   border-radius: 8px;
+  color: var(--wph-ink);
   cursor: pointer;
   display: flex;
-  align-items: center;
+  height: 38px;
   justify-content: center;
-  transition: all 0.2s;
-  color: #555;
+  padding: 0;
+  position: relative;
+  transition: background 150ms ease-out, border-color 150ms ease-out, color 150ms ease-out, transform 120ms ease-out;
+  width: 100%;
 }
 
-.wph-tool:hover {
-  background: #e9ecef;
-  border-color: #adb5bd;
+.wph-tool svg,
+.wph-action svg,
+.wph-icon-btn svg,
+.wph-mode-btn svg {
+  display: block;
+  fill: none;
+  height: 18px;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+  width: 18px;
 }
 
-.wph-tool.active {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-color: #667eea;
-  color: #fff;
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+.wph-tool:hover,
+.wph-action:hover,
+.wph-icon-btn:hover,
+.wph-mode-btn:hover {
+  background: #fff7eb;
+  border-color: rgba(201, 79, 50, 0.42);
+  color: var(--wph-accent-strong);
 }
 
-/* 分隔线 */
+.wph-tool.active,
+.wph-mode-btn.active,
+.wph-icon-btn.picking {
+  background: var(--wph-accent);
+  border-color: var(--wph-accent);
+  color: #fffaf1;
+}
+
+.wph-tool::after,
+.wph-action::after,
+.wph-icon-btn::after,
+.wph-mode-btn::after {
+  background: #26231f;
+  border-radius: 6px;
+  bottom: calc(100% + 7px);
+  color: #fffaf1;
+  content: attr(title);
+  font-size: 11px;
+  left: 50%;
+  opacity: 0;
+  padding: 5px 7px;
+  pointer-events: none;
+  position: absolute;
+  transform: translateX(-50%) translateY(2px);
+  transition: opacity 130ms ease-out, transform 130ms ease-out;
+  white-space: nowrap;
+  z-index: 1;
+}
+
+.wph-tool:hover::after,
+.wph-action:hover::after,
+.wph-icon-btn:hover::after,
+.wph-mode-btn:hover::after {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
 .wph-divider {
+  background: var(--wph-line);
   height: 1px;
-  background: linear-gradient(to right, transparent, #dee2e6, transparent);
   margin: 12px 0;
 }
 
-/* 设置组 */
 .wph-setting-group,
 .wph-font-group {
-  display: flex;
   align-items: center;
+  display: grid;
   gap: 8px;
-  margin-bottom: 10px;
+  grid-template-columns: 40px 1fr auto;
+  margin-bottom: 9px;
+}
+
+.wph-setting-group:has(.wph-color) {
+  grid-template-columns: 40px 38px 38px 38px;
 }
 
 .wph-label {
-  color: #495057;
+  color: var(--wph-muted);
   font-size: 12px;
-  min-width: 40px;
+  font-weight: 600;
 }
 
 .wph-color {
-  width: 32px;
-  height: 32px;
-  border: 2px solid #dee2e6;
+  background: transparent;
+  border: 1px solid var(--wph-line);
   border-radius: 8px;
   cursor: pointer;
-  padding: 0;
+  height: 38px;
+  padding: 3px;
+  width: 38px;
 }
 
 .wph-color::-webkit-color-swatch-wrapper {
-  padding: 2px;
+  padding: 0;
 }
 
 .wph-color::-webkit-color-swatch {
-  border-radius: 4px;
   border: none;
+  border-radius: 6px;
 }
 
 .wph-range,
 .wph-font-size {
-  width: 120px;
-  height: 4px;
-  border-radius: 2px;
-  background: #dee2e6;
   appearance: none;
+  background: #d9d0c3;
+  border-radius: 999px;
   cursor: pointer;
+  height: 4px;
+  width: 100%;
 }
 
 .wph-range::-webkit-slider-thumb,
 .wph-font-size::-webkit-slider-thumb {
   appearance: none;
-  width: 14px;
-  height: 14px;
+  background: var(--wph-accent);
+  border: 2px solid #fffaf1;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  cursor: pointer;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 8px rgba(34, 28, 21, 0.22);
+  height: 16px;
+  width: 16px;
 }
 
 .wph-value {
-  color: #667eea;
+  color: var(--wph-ink);
   font-size: 12px;
-  font-weight: 500;
-  min-width: 30px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
+  min-width: 34px;
+  text-align: right;
 }
 
-/* 操作按钮组 */
-.wph-action-group {
-  display: flex;
-  gap: 8px;
-  justify-content: space-between;
-}
-
-.wph-action {
-  width: 36px;
-  height: 36px;
-  border: 2px solid #dee2e6;
-  background: #f8f9fa;
-  border-radius: 8px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-  color: #555;
-}
-
-.wph-action:hover {
-  background: #e9ecef;
-  border-color: #adb5bd;
-}
-
-.wph-action.wph-primary {
-  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-  border-color: #28a745;
-  color: #fff;
-}
-
-.wph-action.wph-primary:hover {
-  background: linear-gradient(135deg, #34ce57 0%, #25d9a7 100%);
-  border-color: #34ce57;
-}
-
-/* 文字输入框 */
-#wph-text-input {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  animation: fadeIn 0.2s ease;
-}
-
-#wph-text-input:focus {
-  border-color: #667eea;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-}
-
-#wph-text-input::placeholder {
-  color: #999;
-  font-style: italic;
-}
-
-/* 动画 */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-5px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* 提示气泡 */
-.wph-tool::after {
-  content: attr(title);
-  position: absolute;
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 4px 8px;
-  background: #333;
-  color: #fff;
-  font-size: 11px;
-  border-radius: 4px;
-  white-space: nowrap;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.2s;
-}
-
-.wph-tool:hover::after {
-  opacity: 1;
-}
-
-/* 图标按钮 */
-.wph-icon-btn {
-  width: 32px;
-  height: 32px;
-  border: 2px solid #dee2e6;
-  background: #f8f9fa;
-  border-radius: 8px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-  font-size: 16px;
-}
-
-.wph-icon-btn:hover {
-  background: #e9ecef;
-  border-color: #adb5bd;
-  transform: scale(1.05);
-}
-
-/* 预设颜色面板 */
 .wph-color-palette {
-  padding: 12px;
-  background: #f8f9fa;
+  background: #fffaf1;
+  border: 1px solid var(--wph-line);
   border-radius: 8px;
-  margin-bottom: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 26px rgba(37, 31, 23, 0.12);
+  margin-bottom: 10px;
+  padding: 10px;
 }
 
 .wph-color-row {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 8px;
+  display: grid;
+  gap: 7px;
+  grid-template-columns: repeat(5, 1fr);
+  margin-bottom: 7px;
 }
 
 .wph-color-row:last-child {
@@ -289,22 +257,20 @@
 }
 
 .wph-color-swatch {
-  width: 32px;
-  height: 32px;
+  border: 1px solid rgba(35, 33, 29, 0.18);
   border-radius: 6px;
   cursor: pointer;
-  border: 2px solid #dee2e6;
-  transition: all 0.2s;
   display: block;
+  height: 26px;
+  transition: border-color 140ms ease-out, transform 140ms ease-out;
 }
 
 .wph-color-swatch:hover {
-  transform: scale(1.15);
-  border-color: #667eea;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  border-color: var(--wph-accent);
+  transform: translateY(-1px);
 }
 
-.wph-color-swatch[data-color="#000000"] { background: #000000; }
+.wph-color-swatch[data-color="#000000"] { background: #23211d; }
 .wph-color-swatch[data-color="#ffffff"] { background: #ffffff; }
 .wph-color-swatch[data-color="#e74c3c"] { background: #e74c3c; }
 .wph-color-swatch[data-color="#e67e22"] { background: #e67e22; }
@@ -315,50 +281,56 @@
 .wph-color-swatch[data-color="#1abc9c"] { background: #1abc9c; }
 .wph-color-swatch[data-color="#e91e63"] { background: #e91e63; }
 
-/* 模式按钮组 */
 .wph-mode-group {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
-  flex-wrap: wrap;
+  display: grid;
+  gap: 6px;
+  grid-template-columns: repeat(2, 1fr);
 }
 
 .wph-mode-btn {
-  flex: 1;
-  min-width: 80px;
-  padding: 8px 12px;
-  border: 2px solid #dee2e6;
-  background: #f8f9fa;
+  align-items: center;
+  background: #fffdf8;
+  border: 1px solid var(--wph-line);
   border-radius: 8px;
+  color: var(--wph-ink);
   cursor: pointer;
-  transition: all 0.2s;
+  display: flex;
   font-size: 12px;
-  font-weight: 500;
-  color: #555;
-  text-align: center;
+  font-weight: 650;
+  gap: 7px;
+  height: 36px;
+  justify-content: center;
+  padding: 0 8px;
+  position: relative;
+  transition: background 150ms ease-out, border-color 150ms ease-out, color 150ms ease-out, transform 120ms ease-out;
 }
 
-.wph-mode-btn:hover {
-  background: #e9ecef;
-  border-color: #adb5bd;
+.wph-action-group {
+  display: grid;
+  gap: 6px;
+  grid-template-columns: repeat(5, 1fr);
 }
 
-.wph-mode-btn.active {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-color: #667eea;
-  color: #fff;
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+#wph-text-input {
+  box-shadow: 0 12px 30px rgba(35, 30, 22, 0.2);
 }
 
-/* 取色器按钮激活态 */
-.wph-icon-btn.picking {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-color: #667eea;
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+#wph-text-input:focus {
+  border-color: #c94f32;
+  box-shadow: 0 12px 30px rgba(35, 30, 22, 0.2), 0 0 0 3px rgba(201, 79, 50, 0.18);
 }
 
-/* 计数圆圈工具提示 */
-.wph-tool[data-tool="counter"] {
-  font-size: 16px;
-  line-height: 1;
+#wph-text-input::placeholder {
+  color: #8b857b;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

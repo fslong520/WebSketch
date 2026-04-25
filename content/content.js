@@ -1586,9 +1586,9 @@
   // 开始截图模式 - flameshot风格
   function startScreenshot() {
     state.isScreenshotMode = true;
-    state.isFlameshotMode = true;
+    state.isFlameshotMode = false; // 不进入 Flameshot 编辑模式
     
-    // 创建截图遮罩（同时作为选区交互层）
+    // 创建透明截图遮罩（用户可以看到绘图）
     let screenshotOverlay = document.getElementById('wph-screenshot-overlay');
     if (!screenshotOverlay) {
       screenshotOverlay = document.createElement('div');
@@ -1601,7 +1601,7 @@
       left: 0;
       width: 100vw;
       height: 100vh;
-      background: rgba(0, 0, 0, 0.3);
+      background: transparent;
       z-index: 2147483647;
       cursor: crosshair;
       pointer-events: auto;
@@ -1632,9 +1632,7 @@
     // 显示提示
     showScreenshotTip();
     
-    // 隐藏主工具栏和画布（但截图交互在遮罩层上）
-    toolbar.style.display = 'none';
-    canvas.style.display = 'none';
+    // 不隐藏画布和工具栏，用户需要看到绘图内容
     
     // 在遮罩层上绑定截图选区事件
     screenshotOverlay.onmousedown = (e) => {
@@ -1764,51 +1762,84 @@
     ctx.fillText(`(${Math.round(x)}, ${Math.round(y)})`, x, y + height + 16);
   }
 
-  // 捕获选中的区域 - flameshot风格
+  // 捕获选中的区域 - 合成网页截图和绘图内容
   function captureSelectedArea() {
     const x = Math.min(state.screenshotStartX, state.screenshotEndX);
     const y = Math.min(state.screenshotStartY, state.screenshotEndY);
     const width = Math.abs(state.screenshotEndX - state.screenshotStartX);
     const height = Math.abs(state.screenshotEndY - state.screenshotStartY);
-    
+
     if (width < 10 || height < 10) {
       exitScreenshotMode();
       return;
     }
-    
-    // 保存截图区域
-    state.flameshotRect = { x, y, width, height };
-    
-    // 隐藏所有绘图UI，确保截图是纯网页内容
-    const screenshotOverlay = document.getElementById('wph-screenshot-overlay');
-    if (screenshotOverlay) screenshotOverlay.style.display = 'none';
-    if (state.flameshotCanvas) state.flameshotCanvas.style.display = 'none';
-    if (overlay) overlay.style.display = 'none';
-    const gridCanvas = document.getElementById('wph-grid-canvas');
-    if (gridCanvas) gridCanvas.style.display = 'none';
-    hideScreenshotTip();
-    
-    // 请求截图（此时页面是干净的，没有绘图UI遮挡）
-    chrome.runtime.sendMessage({ action: 'captureScreenshot' }, function(response) {
-      // 恢复overlay
-      if (overlay) overlay.style.display = 'block';
-      if (gridCanvas) gridCanvas.style.display = 'block';
-      
-      if (!response || !response.success) {
-        alert('截图失败: ' + (response ? response.error : '未知错误'));
-        exitScreenshotMode();
-        return;
-      }
-      
-      const img = new Image();
-      img.onload = function() {
-        enterFlameshotEdit(img, x, y, width, height);
-      };
-      img.onerror = function() {
-        alert('截图处理失败');
-        exitScreenshotMode();
-      };
-      img.src = response.dataUrl;
+
+    // 收集所有需要隐藏的 UI 元素
+    const uiElements = [
+      canvas, toolbar, overlay,
+      document.getElementById('wph-grid-canvas'),
+      document.getElementById('wph-flameshot-overlay'),
+      document.getElementById('wph-screenshot-overlay'),
+      document.getElementById('wph-screenshot-tip'),
+      textInput
+    ].filter(Boolean);
+    const prevDisplays = uiElements.map(el => el.style.display);
+
+    // 隐藏所有 UI 元素（确保截图是纯网页内容）
+    uiElements.forEach(el => el.style.display = 'none');
+
+    // 等待浏览器重绘
+    requestAnimationFrame(() => {
+      // 请求截图
+      chrome.runtime.sendMessage({ action: 'captureScreenshot' }, function(response) {
+        // 恢复 UI 元素
+        uiElements.forEach((el, i) => el.style.display = prevDisplays[i]);
+
+        if (!response || !response.success) {
+          showCopySuccessTip('截图失败: ' + (response ? response.error : '未知错误'));
+          exitScreenshotMode();
+          return;
+        }
+
+        const img = new Image();
+        img.onload = function() {
+          // 合成：网页截图 + 绘图内容，裁剪到选中区域
+          const dpr = window.devicePixelRatio || 1;
+          const temp = document.createElement('canvas');
+          temp.width = width * dpr;
+          temp.height = height * dpr;
+          const tCtx = temp.getContext('2d');
+
+          // 绘制网页截图（裁剪到选中区域）
+          tCtx.drawImage(
+            img,
+            x * dpr, y * dpr, width * dpr, height * dpr,
+            0, 0, width, height
+          );
+
+          // 叠加绘图内容（裁剪到选中区域）
+          tCtx.drawImage(
+            canvas,
+            x * dpr, y * dpr, width * dpr, height * dpr,
+            0, 0, width, height
+          );
+
+          // 导出为 PNG 并下载
+          const link = document.createElement('a');
+          link.download = `paint-${Date.now()}.png`;
+          link.href = temp.toDataURL('image/png');
+          link.click();
+          showCopySuccessTip('已保存截图（含绘图内容）');
+
+          // 退出截图模式
+          exitScreenshotMode();
+        };
+        img.onerror = function() {
+          showCopySuccessTip('截图处理失败');
+          exitScreenshotMode();
+        };
+        img.src = response.dataUrl;
+      });
     });
   }
   

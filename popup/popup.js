@@ -9,6 +9,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   const statusDesc = document.getElementById('status-desc');
   const toggleBtn = document.getElementById('toggle-btn');
   const btnText = document.getElementById('btn-text');
+  const versionLabel = document.getElementById('extension-version');
+
+  if (versionLabel) {
+    versionLabel.textContent = `v${chrome.runtime.getManifest().version}`;
+  }
 
   async function getStatus() {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });

@@ -52,6 +52,60 @@
     isPickingColor: false
   };
 
+  const ICONS = {
+    brush: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20c2.8 0 5-2.2 5-5 0-1.1-.9-2-2-2s-2 .9-2 2c0 1.7-1.3 3-3 3 .5 1.2 1.2 2 2 2Z"/><path d="m14.5 4.5 5 5L10 19H5v-5L14.5 4.5Z"/><path d="m13 6 5 5"/></svg>',
+    eraser: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 16 9.5-9.5a2.1 2.1 0 0 1 3 0l2 2a2.1 2.1 0 0 1 0 3L10 20H6l-2-2a1.4 1.4 0 0 1 0-2Z"/><path d="m9 11 4 4"/><path d="M14 20h6"/></svg>',
+    text: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6h14"/><path d="M12 6v12"/><path d="M9 18h6"/></svg>',
+    hand: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 11V6a1.5 1.5 0 0 1 3 0v5"/><path d="M11 11V4.5a1.5 1.5 0 0 1 3 0V11"/><path d="M14 11V6a1.5 1.5 0 0 1 3 0v7"/><path d="M17 13v-1.5a1.5 1.5 0 0 1 3 0V14c0 4-2.5 7-7 7h-1.5c-2 0-3.2-.8-4.2-2.2L4 14a1.6 1.6 0 0 1 2.6-1.8L8 14"/></svg>',
+    rect: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="6" width="14" height="12" rx="1.5"/></svg>',
+    circle: '<svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="12" rx="7" ry="6"/></svg>',
+    line: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19 19 5"/></svg>',
+    arrow: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19 19 5"/><path d="M10 5h9v9"/></svg>',
+    counter: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8v8"/><path d="M10 10l2-2 2 2"/></svg>',
+    palette: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4a8 8 0 0 0 0 16h1.2a1.8 1.8 0 0 0 1.2-3.1 1.5 1.5 0 0 1 1-2.6H17a3 3 0 0 0 3-3C20 7.3 16.4 4 12 4Z"/><circle cx="8.5" cy="11" r=".7"/><circle cx="10.5" cy="8" r=".7"/><circle cx="14" cy="8.5" r=".7"/><circle cx="16" cy="11.5" r=".7"/></svg>',
+    picker: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 5 5 5"/><path d="m13 6 5-2 2 2-2 5-9.5 9.5H5v-3.5L13 6Z"/><path d="M7 17h4"/></svg>',
+    fill: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 13 6-6 6 6-6 6-6-6Z"/><path d="M18 14c1.2 1.2 2 2.4 2 3.2a2 2 0 0 1-4 0c0-.8.8-2 2-3.2Z"/></svg>',
+    dash: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h4"/><path d="M11 12h2"/><path d="M16 12h4"/></svg>',
+    grid: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h16"/><path d="M4 16h16"/><path d="M8 4v16"/><path d="M16 4v16"/></svg>',
+    counterReset: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7"/><path d="M12 8v8"/><path d="M10 10l2-2 2 2"/><path d="M19 5v5h-5"/></svg>',
+    camera: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8h3l1.5-2h3L15 8h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2Z"/><circle cx="12" cy="13" r="3"/></svg>',
+    undo: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7 5 11l4 4"/><path d="M5 11h9a5 5 0 0 1 0 10h-2"/></svg>',
+    redo: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 7 4 4-4 4"/><path d="M19 11h-9a5 5 0 0 0 0 10h2"/></svg>',
+    trash: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M8 7l1-3h6l1 3"/><path d="m7 7 1 13h8l1-13"/></svg>',
+    save: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h12l2 2v12H5V5Z"/><path d="M8 5v6h8"/><path d="M8 19v-5h8v5"/></svg>'
+  };
+
+  const TOOL_DEFS = [
+    { tool: 'brush', label: '画笔', key: 'B', icon: 'brush' },
+    { tool: 'eraser', label: '橡皮擦', key: 'E', icon: 'eraser' },
+    { tool: 'text', label: '文字', key: 'T', icon: 'text' },
+    { tool: 'hand', label: '选择移动', key: 'H', icon: 'hand' },
+    { tool: 'rect', label: '矩形', key: 'R', icon: 'rect' },
+    { tool: 'circle', label: '圆形', key: 'C', icon: 'circle' },
+    { tool: 'line', label: '直线', key: 'L', icon: 'line' },
+    { tool: 'arrow', label: '箭头', key: 'A', icon: 'arrow' },
+    { tool: 'counter', label: '计数圆圈', key: 'N', icon: 'counter' }
+  ];
+
+  const MODE_DEFS = [
+    { id: 'wph-fill-btn', label: '填充', icon: 'fill', stateKey: 'fillEnabled' },
+    { id: 'wph-dash-btn', label: '虚线', icon: 'dash', stateKey: 'dashEnabled' },
+    { id: 'wph-grid-btn', label: '网格', icon: 'grid', stateKey: 'gridEnabled' },
+    { id: 'wph-reset-counter', label: '重置计数', icon: 'counterReset', action: 'resetCounter' }
+  ];
+
+  const ACTION_DEFS = [
+    { action: 'screenshot', label: '截图标注', icon: 'camera' },
+    { action: 'undo', label: '撤销', icon: 'undo' },
+    { action: 'redo', label: '重做', icon: 'redo' },
+    { action: 'clear', label: '清除', icon: 'trash' },
+    { action: 'save', label: '保存', icon: 'save' }
+  ];
+
+  function icon(name) {
+    return ICONS[name] || '';
+  }
+
   let overlay, canvas, ctx, toolbar, textInput, previewCanvas, previewCtx;
 
   function init() {
@@ -331,25 +385,17 @@
   function createToolbar() {
     toolbar = document.createElement('div');
     toolbar.id = 'wph-toolbar';
-    toolbar.innerHTML = `<div class="wph-toolbar-header"><span class="wph-title">绘图助手</span><button class="wph-close" title="关闭">×</button></div>
+    toolbar.innerHTML = `<div class="wph-toolbar-header"><span class="wph-title">绘影 WebSketch</span><button class="wph-close" title="关闭" aria-label="关闭">×</button></div>
       <div class="wph-toolbar-body">
         <div class="wph-tool-group">
-          <button class="wph-tool active" data-tool="brush" title="画笔(B)">✏️</button>
-          <button class="wph-tool" data-tool="eraser" title="橡皮擦(E)">🧹</button>
-          <button class="wph-tool" data-tool="text" title="文字(T)">T</button>
-          <button class="wph-tool" data-tool="hand" title="手形(H)">✋</button>
-          <button class="wph-tool" data-tool="rect" title="矩形(R)">▢</button>
-          <button class="wph-tool" data-tool="circle" title="圆形(C)">○</button>
-          <button class="wph-tool" data-tool="line" title="直线(L)">╱</button>
-          <button class="wph-tool" data-tool="arrow" title="箭头(A)">→</button>
-          <button class="wph-tool" data-tool="counter" title="计数圆圈(N)">①</button>
+          ${TOOL_DEFS.map(t => `<button class="wph-tool${t.tool === state.tool ? ' active' : ''}" data-tool="${t.tool}" title="${t.label} (${t.key})" aria-label="${t.label}">${icon(t.icon)}</button>`).join('')}
         </div>
         <div class="wph-divider"></div>
         <div class="wph-setting-group">
-          <label>颜色</label>
+          <label class="wph-label">颜色</label>
           <input type="color" class="wph-color" value="${state.color}">
-          <button class="wph-icon-btn" id="wph-color-palette" title="预设颜色">🎨</button>
-          <button class="wph-icon-btn" id="wph-pick-color" title="取色器(P)">💉</button>
+          <button class="wph-icon-btn" id="wph-color-palette" title="预设颜色" aria-label="预设颜色">${icon('palette')}</button>
+          <button class="wph-icon-btn" id="wph-pick-color" title="取色器 (P)" aria-label="取色器">${icon('picker')}</button>
         </div>
         <div class="wph-color-palette" id="wph-color-palette-panel" style="display:none">
           <div class="wph-color-row">
@@ -367,23 +413,16 @@
             <span class="wph-color-swatch" data-color="#e91e63"></span>
           </div>
         </div>
-        <div class="wph-setting-group"><label>粗细</label><input type="range" class="wph-range" id="wph-line-width" min="1" max="50" value="${state.lineWidth}"><span class="wph-value" id="wph-line-width-value">${state.lineWidth}</span></div>
-        <div class="wph-setting-group"><label>透明</label><input type="range" class="wph-range" id="wph-opacity" min="0.1" max="1" step="0.1" value="${state.opacity}"><span class="wph-value" id="wph-opacity-value">${Math.round(state.opacity * 100)}%</span></div>
-        <div class="wph-setting-group wph-font-group" style="display:none"><label>字号</label><input type="range" class="wph-font-size" min="12" max="72" value="${state.fontSize}"><span>${state.fontSize}px</span></div>
+        <div class="wph-setting-group"><label class="wph-label">粗细</label><input type="range" class="wph-range" id="wph-line-width" min="1" max="50" value="${state.lineWidth}"><span class="wph-value" id="wph-line-width-value">${state.lineWidth}</span></div>
+        <div class="wph-setting-group"><label class="wph-label">透明</label><input type="range" class="wph-range" id="wph-opacity" min="0.1" max="1" step="0.1" value="${state.opacity}"><span class="wph-value" id="wph-opacity-value">${Math.round(state.opacity * 100)}%</span></div>
+        <div class="wph-setting-group wph-font-group" style="display:none"><label class="wph-label">字号</label><input type="range" class="wph-font-size" min="12" max="72" value="${state.fontSize}"><span class="wph-value">${state.fontSize}px</span></div>
         <div class="wph-divider"></div>
         <div class="wph-mode-group">
-          <button class="wph-mode-btn" id="wph-fill-btn" title="填充模式">🖌️ 填充</button>
-          <button class="wph-mode-btn" id="wph-dash-btn" title="虚线模式">📐 虚线</button>
-          <button class="wph-mode-btn" id="wph-grid-btn" title="网格辅助线">📏 网格</button>
-          <button class="wph-mode-btn" id="wph-reset-counter" title="重置计数为1">🔢 重置</button>
+          ${MODE_DEFS.map(m => `<button class="wph-mode-btn${m.stateKey && state[m.stateKey] ? ' active' : ''}" id="${m.id}" ${m.stateKey ? `data-toggle="${m.stateKey}"` : `data-action="${m.action}"`} title="${m.label}" aria-label="${m.label}">${icon(m.icon)}<span>${m.label}</span></button>`).join('')}
         </div>
         <div class="wph-divider"></div>
         <div class="wph-action-group">
-          <button class="wph-action" id="wph-screenshot" title="截图标注">📷</button>
-          <button class="wph-action" id="wph-undo" title="撤销">↩</button>
-          <button class="wph-action" id="wph-redo" title="重做">↪</button>
-          <button class="wph-action" id="wph-clear" title="清除">🗑</button>
-          <button class="wph-action" id="wph-save" title="保存">💾</button>
+          ${ACTION_DEFS.map(a => `<button class="wph-action" data-action="${a.action}" title="${a.label}" aria-label="${a.label}">${icon(a.icon)}</button>`).join('')}
         </div>
       </div>`;
     document.body.appendChild(toolbar);
@@ -474,11 +513,7 @@
     
     toolbar.querySelectorAll('.wph-tool').forEach(btn => {
       btn.addEventListener('click', () => {
-        toolbar.querySelectorAll('.wph-tool').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        state.tool = btn.dataset.tool;
-        updateCursor();
-        toolbar.querySelector('.wph-font-group').style.display = state.tool === 'text' ? 'flex' : 'none';
+        selectTool(btn.dataset.tool);
       });
     });
     toolbar.querySelector('.wph-color').addEventListener('input', e => state.color = e.target.value);
@@ -513,23 +548,17 @@
     toolbar.querySelector('#wph-pick-color').addEventListener('click', () => {
       state.isPickingColor = true;
       canvas.style.cursor = 'crosshair';
+      toolbar.querySelector('#wph-pick-color').classList.add('picking');
       showColorPickerTip();
     });
     
-    toolbar.querySelector('#wph-fill-btn').addEventListener('click', () => {
-      state.fillEnabled = !state.fillEnabled;
-      toolbar.querySelector('#wph-fill-btn').classList.toggle('active', state.fillEnabled);
-    });
-    
-    toolbar.querySelector('#wph-dash-btn').addEventListener('click', () => {
-      state.dashEnabled = !state.dashEnabled;
-      toolbar.querySelector('#wph-dash-btn').classList.toggle('active', state.dashEnabled);
-    });
-    
-    toolbar.querySelector('#wph-grid-btn').addEventListener('click', () => {
-      state.gridEnabled = !state.gridEnabled;
-      toolbar.querySelector('#wph-grid-btn').classList.toggle('active', state.gridEnabled);
-      drawGrid();
+    toolbar.querySelectorAll('[data-toggle]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const key = btn.dataset.toggle;
+        state[key] = !state[key];
+        btn.classList.toggle('active', state[key]);
+        if (key === 'gridEnabled') drawGrid();
+      });
     });
     
     toolbar.querySelector('#wph-reset-counter').addEventListener('click', () => {
@@ -537,11 +566,16 @@
       showCopySuccessTip('计数已重置为 1');
     });
     
-    toolbar.querySelector('#wph-screenshot').addEventListener('click', startScreenshot);
-    toolbar.querySelector('#wph-undo').addEventListener('click', undo);
-    toolbar.querySelector('#wph-redo').addEventListener('click', redo);
-    toolbar.querySelector('#wph-clear').addEventListener('click', clearCanvas);
-    toolbar.querySelector('#wph-save').addEventListener('click', saveImage);
+    const actionHandlers = {
+      screenshot: startScreenshot,
+      undo,
+      redo,
+      clear: clearCanvas,
+      save: saveImage
+    };
+    toolbar.querySelectorAll('.wph-action[data-action]').forEach(btn => {
+      btn.addEventListener('click', () => actionHandlers[btn.dataset.action]?.());
+    });
     toolbar.querySelector('.wph-close').addEventListener('click', disable);
 
     canvas.addEventListener('mousedown', handleMouseDown);
@@ -1212,7 +1246,11 @@
     }
     
     if (!state.enabled) return;
+    if (isEditableTarget(e.target)) return;
     const key = e.key.toLowerCase();
+    if (e.ctrlKey && key === 'z') { e.preventDefault(); undo(); return; }
+    if (e.ctrlKey && key === 'y') { e.preventDefault(); redo(); return; }
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
     if (key === 'b') selectTool('brush');
     else if (key === 'e') selectTool('eraser');
     else if (key === 't') selectTool('text');
@@ -1222,13 +1260,18 @@
     else if (key === 'l') selectTool('line');
     else if (key === 'a') selectTool('arrow');
     else if (key === 'n') selectTool('counter');
+    else if (key === 's') startScreenshot();
+    else if (key === 'g') {
+      state.gridEnabled = !state.gridEnabled;
+      toolbar.querySelector('#wph-grid-btn')?.classList.toggle('active', state.gridEnabled);
+      drawGrid();
+    }
     else if (key === 'p') {
       state.isPickingColor = true;
       canvas.style.cursor = 'crosshair';
+      toolbar.querySelector('#wph-pick-color')?.classList.add('picking');
       showColorPickerTip();
     }
-    else if (e.ctrlKey && key === 'z') { e.preventDefault(); undo(); }
-    else if (e.ctrlKey && key === 'y') { e.preventDefault(); redo(); }
     else if (key === 'delete' || key === 'backspace') {
       if (state.selectedObject !== null && document.activeElement !== textInput) {
         e.preventDefault();
@@ -1242,9 +1285,17 @@
 
   function selectTool(tool) {
     state.tool = tool;
-    toolbar.querySelectorAll('.wph-tool').forEach(b => b.classList.toggle('active', b.dataset.tool === tool));
+    syncToolbarState();
     updateCursor();
-    toolbar.querySelector('.wph-font-group').style.display = tool === 'text' ? 'flex' : 'none';
+  }
+
+  function syncToolbarState() {
+    if (!toolbar) return;
+    toolbar.querySelectorAll('.wph-tool').forEach(b => b.classList.toggle('active', b.dataset.tool === state.tool));
+    toolbar.querySelector('.wph-font-group').style.display = state.tool === 'text' ? 'grid' : 'none';
+    toolbar.querySelectorAll('[data-toggle]').forEach(btn => {
+      btn.classList.toggle('active', Boolean(state[btn.dataset.toggle]));
+    });
   }
 
   function updateCursor() {
@@ -1254,9 +1305,16 @@
                           state.tool === 'hand' ? 'grab' : 
                           'crosshair';
   }
+
+  function isEditableTarget(target) {
+    if (!target) return false;
+    const tag = target.tagName;
+    return target.isContentEditable || tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+  }
   
   // 取色器功能
   function showColorPickerTip() {
+    hideColorPickerTip();
     const tip = document.createElement('div');
     tip.id = 'wph-picker-tip';
     tip.textContent = '点击屏幕任意位置取色，按 ESC 取消';
@@ -1279,6 +1337,7 @@
   function hideColorPickerTip() {
     const tip = document.getElementById('wph-picker-tip');
     if (tip) tip.remove();
+    toolbar?.querySelector('#wph-pick-color')?.classList.remove('picking');
   }
   
   function pickColorAt(x, y) {
@@ -2229,7 +2288,6 @@
       toolbar.style.display = 'none';
       canvas.style.display = 'none';
       
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       chrome.tabs.captureVisibleTab(null, { format: 'png' }, (dataUrl) => {
         toolbar.style.display = 'block';
         canvas.style.display = 'block';

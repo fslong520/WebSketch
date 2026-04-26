@@ -1836,17 +1836,19 @@
           // 复制到剪贴板
           temp.toBlob(async (blob) => {
             try {
+              if (!blob) throw new Error('Blob 创建失败');
               await navigator.clipboard.write([
                 new ClipboardItem({ 'image/png': blob })
               ]);
               showCopySuccessTip('已保存并复制到剪贴板');
             } catch (e) {
+              console.error('复制到剪贴板失败:', e);
+              console.error('错误详情:', e.message, e.name);
+              // 如果剪贴板失败，至少文件已下载
               showCopySuccessTip('已保存截图（剪贴板复制失败）');
             }
+            exitScreenshotMode();
           }, 'image/png');
-
-          // 退出截图模式
-          exitScreenshotMode();
         };
         img.onerror = function() {
           showCopySuccessTip('截图处理失败');

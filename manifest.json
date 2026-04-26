@@ -7,7 +7,8 @@
   "permissions": [
     "activeTab",
     "scripting",
-    "tabs"
+    "tabs",
+    "clipboardWrite"
   ],
   "action": {
     "default_title": "WebSketch - 绘影",

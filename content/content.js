@@ -1824,12 +1824,26 @@
             0, 0, width, height
           );
 
-          // 导出为 PNG 并下载
+          // 导出为 PNG
+          const dataUrl = temp.toDataURL('image/png');
+
+          // 下载文件
           const link = document.createElement('a');
           link.download = `paint-${Date.now()}.png`;
-          link.href = temp.toDataURL('image/png');
+          link.href = dataUrl;
           link.click();
-          showCopySuccessTip('已保存截图（含绘图内容）');
+
+          // 复制到剪贴板
+          temp.toBlob(async (blob) => {
+            try {
+              await navigator.clipboard.write([
+                new ClipboardItem({ 'image/png': blob })
+              ]);
+              showCopySuccessTip('已保存并复制到剪贴板');
+            } catch (e) {
+              showCopySuccessTip('已保存截图（剪贴板复制失败）');
+            }
+          }, 'image/png');
 
           // 退出截图模式
           exitScreenshotMode();

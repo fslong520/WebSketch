@@ -53,33 +53,25 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
   // 监听剪贴板复制请求
   if (request.action === 'copyToClipboard') {
-    console.log('Background: 收到剪贴板复制请求，使用 executeScript 注入主世界');
+    console.log('Background: 收到剪贴板复制请求');
 
-    // 使用 chrome.scripting.executeScript 在 MAIN 世界执行剪贴板操作
-    // MAIN 世界中 navigator.clipboard 肯定可用
-    chrome.scripting.executeScript({
-      target: { tabId: sender.tab.id },
-      world: 'MAIN',
-      func: (dataUrl) => {
-        return fetch(dataUrl)
-          .then(res => res.blob())
-          .then(blob => navigator.clipboard.write([
-            new ClipboardItem({ 'image/png': blob })
-          ]))
-          .then(() => ({ success: true }))
-          .catch(err => ({ success: false, error: err.message }));
-      },
-      args: [request.dataUrl]
-    }, (results) => {
-      if (chrome.runtime.lastError) {
-        console.error('Background: 注入脚本失败:', chrome.runtime.lastError);
-        sendResponse({ success: false, error: chrome.runtime.lastError.message });
-      } else if (results && results[0]) {
-        sendResponse(results[0].result || { success: false, error: '未知错误' });
-      } else {
-        sendResponse({ success: false, error: '注入脚本无返回' });
-      }
-    });
+    // 在 background service worker 中，navigator.clipboard 是可用的
+    // 将 data URL 转换为 blob，然后复制到剪贴板
+    fetch(request.dataUrl)
+      .then(res => res.blob())
+      .then(blob => {
+        return navigator.clipboard.write([
+          new ClipboardItem({ 'image/png': blob })
+        ]);
+      })
+      .then(() => {
+        console.log('Background: 剪贴板复制成功');
+        sendResponse({ success: true });
+      })
+      .catch(err => {
+        console.error('Background: 剪贴板复制失败:', err);
+        sendResponse({ success: false, error: err.message });
+      });
 
     return true; // 保持消息通道开放
   }

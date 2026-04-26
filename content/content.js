@@ -1826,31 +1826,39 @@
 
           // 导出为 PNG
           const dataUrl = temp.toDataURL('image/png');
-
+          
           // 下载文件
           const link = document.createElement('a');
           link.download = `paint-${Date.now()}.png`;
           link.href = dataUrl;
           link.click();
-
-          // 复制到剪贴板（通过 background script）
-          console.log('WebSketch: 发送到 background 复制剪贴板...');
-          chrome.runtime.sendMessage(
-            { action: 'copyToClipboard', dataUrl: dataUrl },
-            (response) => {
-              if (chrome.runtime.lastError) {
-                console.error('WebSketch: 发送失败:', chrome.runtime.lastError);
-                showCopySuccessTip('已保存截图（剪贴板复制失败）');
-              } else if (response && response.success) {
+          
+          // 复制到剪贴板（在用户手势中直接调用）
+          console.log('WebSketch: 开始复制到剪贴板...');
+          try {
+            // 将 data URL 转换为 blob
+            fetch(dataUrl)
+              .then(res => res.blob())
+              .then(blob => {
+                return navigator.clipboard.write([
+                  new ClipboardItem({ 'image/png': blob })
+                ]);
+              })
+              .then(() => {
                 console.log('WebSketch: 剪贴板复制成功');
                 showCopySuccessTip('已保存并复制到剪贴板');
-              } else {
-                console.error('WebSketch: 剪贴板复制失败:', response ? response.error : '未知错误');
+                exitScreenshotMode();
+              })
+              .catch(err => {
+                console.error('WebSketch: 剪贴板复制失败:', err);
                 showCopySuccessTip('已保存截图（剪贴板复制失败）');
-              }
-              exitScreenshotMode();
-            }
-          );
+                exitScreenshotMode();
+              });
+          } catch (e) {
+            console.error('WebSketch: 复制到剪贴板异常:', e);
+            showCopySuccessTip('已保存截图（剪贴板复制失败）');
+            exitScreenshotMode();
+          }
         };
         img.onerror = function() {
           showCopySuccessTip('截图处理失败');

@@ -1452,46 +1452,48 @@
     const prevDisplays = uiElements.map(el => el.style.display);
     uiElements.forEach(el => el.style.display = 'none');
     
-    // 需要短暂延迟让浏览器完成重绘
+    // 双重 rAF 确保浏览器完成重绘后再截图
     requestAnimationFrame(() => {
-      chrome.runtime.sendMessage({ action: 'captureScreenshot' }, function(response) {
-        // 恢复UI
-        uiElements.forEach((el, i) => el.style.display = prevDisplays[i]);
-        
-        if (response && response.success) {
-          // 合成：网页截图 + 绘图内容
-          const img = new Image();
-          img.onload = function() {
+      requestAnimationFrame(() => {
+        chrome.runtime.sendMessage({ action: 'captureScreenshot' }, function(response) {
+          // 恢复UI
+          uiElements.forEach((el, i) => el.style.display = prevDisplays[i]);
+          
+          if (response && response.success) {
+            // 合成：网页截图 + 绘图内容
+            const img = new Image();
+            img.onload = function() {
+              const temp = document.createElement('canvas');
+              temp.width = canvas.width;
+              temp.height = canvas.height;
+              const tCtx = temp.getContext('2d');
+              
+              // 先绘制网页截图
+              tCtx.drawImage(img, 0, 0);
+              
+              // 再叠加绘图内容
+              tCtx.drawImage(canvas, 0, 0);
+              
+              const link = document.createElement('a');
+              link.download = `paint-${Date.now()}.png`;
+              link.href = temp.toDataURL('image/png');
+              link.click();
+              showCopySuccessTip('已保存（含网页内容）');
+            };
+            img.src = response.dataUrl;
+          } else {
+            // 降级：只保存绘图内容
             const temp = document.createElement('canvas');
             temp.width = canvas.width;
             temp.height = canvas.height;
             const tCtx = temp.getContext('2d');
-            
-            // 先绘制网页截图
-            tCtx.drawImage(img, 0, 0);
-            
-            // 再叠加绘图内容
             tCtx.drawImage(canvas, 0, 0);
-            
             const link = document.createElement('a');
             link.download = `paint-${Date.now()}.png`;
             link.href = temp.toDataURL('image/png');
             link.click();
-            showCopySuccessTip('已保存（含网页内容）');
-          };
-          img.src = response.dataUrl;
-        } else {
-          // 降级：只保存绘图内容
-          const temp = document.createElement('canvas');
-          temp.width = canvas.width;
-          temp.height = canvas.height;
-          const tCtx = temp.getContext('2d');
-          tCtx.drawImage(canvas, 0, 0);
-          const link = document.createElement('a');
-          link.download = `paint-${Date.now()}.png`;
-          link.href = temp.toDataURL('image/png');
-          link.click();
-        }
+          }
+        });
       });
     });
   }
@@ -1614,6 +1616,7 @@
       flameshotOverlay.id = 'wph-flameshot-overlay';
       document.body.appendChild(flameshotOverlay);
     }
+    // 重置 canvas 尺寸会自动清除内容和重置 transform，避免 scale 累积
     flameshotOverlay.width = window.innerWidth * window.devicePixelRatio;
     flameshotOverlay.height = window.innerHeight * window.devicePixelRatio;
     flameshotOverlay.style.cssText = `
@@ -1627,6 +1630,7 @@
     `;
     state.flameshotCanvas = flameshotOverlay;
     state.flameshotCtx = flameshotOverlay.getContext('2d');
+    // 设置 width/height 已重置 transform，这里只需 scale 一次
     state.flameshotCtx.scale(window.devicePixelRatio, window.devicePixelRatio);
     
     // 显示提示
@@ -1636,6 +1640,8 @@
     
     // 在遮罩层上绑定截图选区事件
     screenshotOverlay.onmousedown = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
       state.screenshotStartX = e.clientX;
       state.screenshotStartY = e.clientY;
       state.screenshotEndX = e.clientX;
@@ -1644,6 +1650,7 @@
     };
     
     screenshotOverlay.onmousemove = (e) => {
+      e.stopPropagation();
       if (state.isScreenshotMode && state.isDrawing) {
         state.screenshotEndX = e.clientX;
         state.screenshotEndY = e.clientY;
@@ -1652,6 +1659,7 @@
     };
     
     screenshotOverlay.onmouseup = (e) => {
+      e.stopPropagation();
       if (state.isScreenshotMode && state.isDrawing) {
         state.isDrawing = false;
         state.screenshotEndX = e.clientX;
@@ -1788,83 +1796,85 @@
     // 隐藏所有 UI 元素（确保截图是纯网页内容）
     uiElements.forEach(el => el.style.display = 'none');
 
-    // 等待浏览器重绘
+    // 双重 rAF 确保浏览器完成重绘后再截图
     requestAnimationFrame(() => {
-      // 请求截图
-      chrome.runtime.sendMessage({ action: 'captureScreenshot' }, function(response) {
-        // 恢复 UI 元素
-        uiElements.forEach((el, i) => el.style.display = prevDisplays[i]);
+      requestAnimationFrame(() => {
+        // 请求截图
+        chrome.runtime.sendMessage({ action: 'captureScreenshot' }, function(response) {
+          // 恢复 UI 元素
+          uiElements.forEach((el, i) => el.style.display = prevDisplays[i]);
 
-        if (!response || !response.success) {
-          showCopySuccessTip('截图失败: ' + (response ? response.error : '未知错误'));
-          exitScreenshotMode();
-          return;
-        }
-
-        const img = new Image();
-        img.onload = function() {
-          // 合成：网页截图 + 绘图内容，裁剪到选中区域
-          const dpr = window.devicePixelRatio || 1;
-          const temp = document.createElement('canvas');
-          temp.width = width * dpr;
-          temp.height = height * dpr;
-          const tCtx = temp.getContext('2d');
-
-          // 绘制网页截图（裁剪到选中区域）
-          tCtx.drawImage(
-            img,
-            x * dpr, y * dpr, width * dpr, height * dpr,
-            0, 0, width, height
-          );
-
-          // 叠加绘图内容（裁剪到选中区域）
-          tCtx.drawImage(
-            canvas,
-            x * dpr, y * dpr, width * dpr, height * dpr,
-            0, 0, width, height
-          );
-
-          // 导出为 PNG
-          const dataUrl = temp.toDataURL('image/png');
-          
-          // 下载文件
-          const link = document.createElement('a');
-          link.download = `paint-${Date.now()}.png`;
-          link.href = dataUrl;
-          link.click();
-          
-          // 复制到剪贴板（在用户手势中直接调用）
-          console.log('WebSketch: 开始复制到剪贴板...');
-          try {
-            // 将 data URL 转换为 blob
-            fetch(dataUrl)
-              .then(res => res.blob())
-              .then(blob => {
-                return navigator.clipboard.write([
-                  new ClipboardItem({ 'image/png': blob })
-                ]);
-              })
-              .then(() => {
-                console.log('WebSketch: 剪贴板复制成功');
-                showCopySuccessTip('已保存并复制到剪贴板');
-                exitScreenshotMode();
-              })
-              .catch(err => {
-                console.error('WebSketch: 剪贴板复制失败:', err);
-                showCopySuccessTip('已保存截图（剪贴板复制失败）');
-                exitScreenshotMode();
-              });
-          } catch (e) {
-            console.error('WebSketch: 复制到剪贴板异常:', e);
-            showCopySuccessTip('已保存截图（剪贴板复制失败）');
+          if (!response || !response.success) {
+            showCopySuccessTip('截图失败: ' + (response ? response.error : '未知错误'));
             exitScreenshotMode();
+            return;
           }
-        };
-        img.onerror = function() {
-          showCopySuccessTip('截图处理失败');
-          exitScreenshotMode();
-        };
-        img.src = response.dataUrl;
+
+          const img = new Image();
+          img.onload = function() {
+            // 合成：网页截图 + 绘图内容，裁剪到选中区域
+            const dpr = window.devicePixelRatio || 1;
+            const temp = document.createElement('canvas');
+            temp.width = width * dpr;
+            temp.height = height * dpr;
+            const tCtx = temp.getContext('2d');
+
+            // 绘制网页截图（裁剪到选中区域）
+            tCtx.drawImage(
+              img,
+              x * dpr, y * dpr, width * dpr, height * dpr,
+              0, 0, width, height
+            );
+
+            // 叠加绘图内容（裁剪到选中区域）
+            tCtx.drawImage(
+              canvas,
+              x * dpr, y * dpr, width * dpr, height * dpr,
+              0, 0, width, height
+            );
+
+            // 导出为 PNG
+            const dataUrl = temp.toDataURL('image/png');
+            
+            // 下载文件
+            const link = document.createElement('a');
+            link.download = `paint-${Date.now()}.png`;
+            link.href = dataUrl;
+            link.click();
+            
+            // 复制到剪贴板（在用户手势中直接调用）
+            console.log('WebSketch: 开始复制到剪贴板...');
+            try {
+              // 将 data URL 转换为 blob
+              fetch(dataUrl)
+                .then(res => res.blob())
+                .then(blob => {
+                  return navigator.clipboard.write([
+                    new ClipboardItem({ 'image/png': blob })
+                  ]);
+                })
+                .then(() => {
+                  console.log('WebSketch: 剪贴板复制成功');
+                  showCopySuccessTip('已保存并复制到剪贴板');
+                  exitScreenshotMode();
+                })
+                .catch(err => {
+                  console.error('WebSketch: 剪贴板复制失败:', err);
+                  showCopySuccessTip('已保存截图（剪贴板复制失败）');
+                  exitScreenshotMode();
+                });
+            } catch (e) {
+              console.error('WebSketch: 复制到剪贴板异常:', e);
+              showCopySuccessTip('已保存截图（剪贴板复制失败）');
+              exitScreenshotMode();
+            }
+          };
+          img.onerror = function() {
+            showCopySuccessTip('截图处理失败');
+            exitScreenshotMode();
+          };
+          img.src = response.dataUrl;
+        });
       });
     });
   }
@@ -2327,10 +2337,19 @@
     }
     
     const flameshotOverlay = document.getElementById('wph-flameshot-overlay');
-    if (flameshotOverlay) flameshotOverlay.remove();
+    if (flameshotOverlay) {
+      // 清除画布内容，防止残留
+      const fCtx = flameshotOverlay.getContext('2d');
+      if (fCtx) fCtx.clearRect(0, 0, flameshotOverlay.width, flameshotOverlay.height);
+      flameshotOverlay.remove();
+    }
+    
+    // 清理 flameshot 状态引用
+    state.flameshotCanvas = null;
+    state.flameshotCtx = null;
     
     hideScreenshotTip();
-    previewCanvas.style.display = 'none';
+    if (previewCanvas) previewCanvas.style.display = 'none';
     updateCursor();
     
     // 恢复主画布

@@ -1833,37 +1833,61 @@
           link.href = dataUrl;
           link.click();
 
-          // 复制到剪贴板（通过 background script）
-          temp.toBlob(async (blob) => {
-            try {
-              if (!blob) throw new Error('Blob 创建失败');
-              // 将 blob 转换为 data URL
-              const reader = new FileReader();
-              reader.onload = function() {
-                // 发送到 background script 进行剪贴板复制
-                chrome.runtime.sendMessage(
-                  { action: 'copyToClipboard', dataUrl: reader.result },
-                  (response) => {
-                    if (response && response.success) {
-                      showCopySuccessTip('已保存并复制到剪贴板');
-                    } else {
-                      showCopySuccessTip('已保存截图（剪贴板复制失败）');
-                    }
-                    exitScreenshotMode();
-                  }
-                );
-              };
-              reader.onerror = function() {
-                console.error('FileReader 错误:', reader.error);
-                showCopySuccessTip('已保存截图（剪贴板复制失败）');
-                exitScreenshotMode();
-              };
-              reader.readAsDataURL(blob);
-            } catch (e) {
-              console.error('复制到剪贴板失败:', e);
+          // 复制到剪贴板（使用 chrome.scripting.executeScript 在 MAIN 世界执行）
+          console.log('WebSketch: 开始复制到剪贴板...');
+          temp.toBlob((blob) => {
+            if (!blob) {
+              console.error('WebSketch: Blob 创建失败');
               showCopySuccessTip('已保存截图（剪贴板复制失败）');
               exitScreenshotMode();
+              return;
             }
+            console.log('WebSketch: Blob 创建成功，大小:', blob.size);
+
+            // 将 blob 转换为 data URL
+            const reader = new FileReader();
+            reader.onload = function() {
+              const dataUrl = reader.result;
+              console.log('WebSketch: 准备注入剪贴板代码到 MAIN 世界...');
+
+              // 使用 chrome.scripting.executeScript 在 MAIN 世界执行剪贴板操作
+              chrome.scripting.executeScript({
+                target: { tabId: chrome.runtime.id ? null : 1 }, // 占位，实际由 background 处理
+                world: 'MAIN',
+                func: (dataUrl) => {
+                  return fetch(dataUrl)
+                    .then(res => res.blob())
+                    .then(blob => navigator.clipboard.write([
+                      new ClipboardItem({ 'image/png': blob })
+                    ]))
+                    .then(() => ({ success: true }))
+                    .catch(err => ({ success: false, error: err.message }));
+                },
+                args: [dataUrl]
+              }, (results) => {
+                if (chrome.runtime.lastError) {
+                  console.error('WebSketch: 注入脚本失败:', chrome.runtime.lastError);
+                  showCopySuccessTip('已保存截图（剪贴板复制失败）');
+                } else if (results && results[0] && results[0].result) {
+                  if (results[0].result.success) {
+                    showCopySuccessTip('已保存并复制到剪贴板');
+                  } else {
+                    console.error('WebSketch: 剪贴板复制失败:', results[0].result.error);
+                    showCopySuccessTip('已保存截图（剪贴板复制失败）');
+                  }
+                } else {
+                  showCopySuccessTip('已保存截图（剪贴板复制失败）');
+                }
+                exitScreenshotMode();
+              });
+            };
+            reader.onerror = function() {
+              console.error('WebSketch: FileReader 错误:', reader.error);
+              showCopySuccessTip('已保存截图（剪贴板复制失败）');
+              exitScreenshotMode();
+            };
+            reader.readAsDataURL(blob);
+          }, 'image/png');
           }, 'image/png');
         };
         img.onerror = function() {

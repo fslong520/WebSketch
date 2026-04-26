@@ -50,4 +50,24 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     });
     return true; // 保持消息通道开放
   }
+
+  // 监听剪贴板复制请求
+  if (request.action === 'copyToClipboard') {
+    // 将 dataUrl 转换为 blob
+    fetch(request.dataUrl)
+      .then(res => res.blob())
+      .then(blob => {
+        return navigator.clipboard.write([
+          new ClipboardItem({ 'image/png': blob })
+        ]);
+      })
+      .then(() => {
+        sendResponse({ success: true });
+      })
+      .catch(err => {
+        console.error('剪贴板复制失败:', err);
+        sendResponse({ success: false, error: err.message });
+      });
+    return true; // 保持消息通道开放
+  }
 });

@@ -1833,21 +1833,32 @@
           link.href = dataUrl;
           link.click();
 
-          // 复制到剪贴板
+          // 复制到剪贴板（通过 background script）
           temp.toBlob(async (blob) => {
             try {
               if (!blob) throw new Error('Blob 创建失败');
-              await navigator.clipboard.write([
-                new ClipboardItem({ 'image/png': blob })
-              ]);
-              showCopySuccessTip('已保存并复制到剪贴板');
+              // 将 blob 转换为 data URL
+              const reader = new FileReader();
+              reader.onloadend = function() {
+                // 发送到 background script 进行剪贴板复制
+                chrome.runtime.sendMessage(
+                  { action: 'copyToClipboard', dataUrl: reader.result },
+                  (response) => {
+                    if (response && response.success) {
+                      showCopySuccessTip('已保存并复制到剪贴板');
+                    } else {
+                      showCopySuccessTip('已保存截图（剪贴板复制失败）');
+                    }
+                    exitScreenshotMode();
+                  }
+                );
+              };
+              reader.readAsDataURL(blob);
             } catch (e) {
               console.error('复制到剪贴板失败:', e);
-              console.error('错误详情:', e.message, e.name);
-              // 如果剪贴板失败，至少文件已下载
               showCopySuccessTip('已保存截图（剪贴板复制失败）');
+              exitScreenshotMode();
             }
-            exitScreenshotMode();
           }, 'image/png');
         };
         img.onerror = function() {

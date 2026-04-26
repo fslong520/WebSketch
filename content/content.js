@@ -1839,7 +1839,7 @@
               if (!blob) throw new Error('Blob 创建失败');
               // 将 blob 转换为 data URL
               const reader = new FileReader();
-              reader.onloadend = function() {
+              reader.onload = function() {
                 // 发送到 background script 进行剪贴板复制
                 chrome.runtime.sendMessage(
                   { action: 'copyToClipboard', dataUrl: reader.result },
@@ -1852,6 +1852,11 @@
                     exitScreenshotMode();
                   }
                 );
+              };
+              reader.onerror = function() {
+                console.error('FileReader 错误:', reader.error);
+                showCopySuccessTip('已保存截图（剪贴板复制失败）');
+                exitScreenshotMode();
               };
               reader.readAsDataURL(blob);
             } catch (e) {

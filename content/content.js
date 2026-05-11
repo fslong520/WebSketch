@@ -49,7 +49,9 @@
     // 计数圆圈
     counterNumber: 1,
     // 取色器
-    isPickingColor: false
+    isPickingColor: false,
+    // 文字编辑状态
+    editingTextIndex: null  // 非 null 时表示正在编辑已有文字对象
   };
 
   const ICONS = {
@@ -429,21 +431,50 @@
   }
 
   function createTextInput() {
-    textInput = document.createElement('textarea');
+    textInput = document.createElement('div');
     textInput.id = 'wph-text-input';
-    textInput.placeholder = '输入文字...';
-    textInput.style.cssText = `position:fixed;background:#fff;border:2px solid ${state.color};border-radius:4px;padding:6px 10px;z-index:2147483648;display:none;outline:none;resize:none;font-family:Microsoft YaHei, sans-serif;`;
+    textInput.contentEditable = 'plaintext-only';
+    // 兼容不支持 plaintext-only 的浏览器
+    if (textInput.contentEditable !== 'plaintext-only') {
+      textInput.contentEditable = 'true';
+    }
+    textInput.style.cssText = [
+      'position:fixed',
+      'background:transparent',
+      'border:none',
+      'padding:0',
+      'margin:0',
+      'z-index:2147483648',
+      'display:none',
+      'outline:none',
+      'white-space:pre-wrap',
+      'word-wrap:break-word',
+      'overflow:visible',
+      'min-width:10px',
+      'min-height:1em',
+      'pointer-events:auto',
+      'caret-color:auto'
+    ].join(';');
     document.body.appendChild(textInput);
     
     textInput.addEventListener('keydown', e => {
       e.stopPropagation();
-      if (e.key === 'Enter' && !e.shiftKey) { 
-        e.preventDefault(); 
-        commitText(); 
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        commitText();
       }
-      if (e.key === 'Escape') { 
-        textInput.style.display = 'none'; 
-        textInput.value = ''; 
+      if (e.key === 'Escape') {
+        textInput.style.display = 'none';
+        textInput.textContent = '';
+        state.editingTextIndex = null;
+        // 取消编辑后重绘，恢复原文
+        redrawCanvas();
+      }
+    });
+    
+    textInput.addEventListener('blur', () => {
+      if (textInput.style.display === 'block') {
+        commitText();
       }
     });
     
@@ -453,33 +484,111 @@
   }
 
   function commitText() {
-    const text = textInput.value.trim();
+    const text = textInput.innerText.trim();
     if (text) {
-      const rect = textInput.getBoundingClientRect();
-      // 添加文字对象
-      state.objects.push({
-        type: 'text',
-        x: rect.left,
-        y: rect.top,
-        text: text,
-        color: state.color,
-        fontSize: state.fontSize,
-        fontFamily: state.fontFamily,
-        opacity: state.opacity
-      });
-      redrawCanvas();
-      saveState();
+      if (state.editingTextIndex !== null) {
+        // 编辑模式：仅更新文字内容，保留原属性
+        state.objects[state.editingTextIndex].text = text;
+      } else {
+        // 新建模式：创建新文字对象（用 getBoundingClientRect 取位置）
+        const rect = textInput.getBoundingClientRect();
+        state.objects.push({
+          type: 'text',
+          x: rect.left,
+          y: rect.top,
+          text: text,
+          color: state.color,
+          fontSize: state.fontSize,
+          fontFamily: state.fontFamily,
+          opacity: state.opacity
+        });
+      }
     }
     textInput.style.display = 'none';
-    textInput.value = '';
+    textInput.textContent = '';
+    state.editingTextIndex = null;
+    // 清完标记再重绘，确保画布正确显示所有对象
+    redrawCanvas();
+    if (text) {
+      saveState();
+    }
   }
 
-  function showTextInput(x, y) {
-    textInput.style.cssText = `position:fixed;left:${x}px;top:${y}px;background:#fff;border:2px solid ${state.color};border-radius:4px;padding:6px 10px;z-index:2147483648;display:block;outline:none;resize:none;font-family:Microsoft YaHei, sans-serif;font-size:${state.fontSize}px;min-width:200px;min-height:40px;box-shadow:0 4px 12px rgba(0,0,0,0.15);`;
-    textInput.value = '';
+  function showTextInput(x, y, prefillText, editIndex) {
+    if (editIndex !== undefined && editIndex !== null) {
+      // 编辑模式：匹配原文样式，原地编辑
+      state.editingTextIndex = editIndex;
+      const obj = state.objects[editIndex];
+      const styles = [
+        'position:fixed',
+        `left:${x}px`,
+        `top:${y}px`,
+        'background:transparent',
+        'border:none',
+        'padding:0',
+        'margin:0',
+        'z-index:2147483648',
+        'display:block',
+        'outline:none',
+        'white-space:pre-wrap',
+        'word-wrap:break-word',
+        'overflow:visible',
+        'min-width:10px',
+        'min-height:1em',
+        'pointer-events:auto',
+        'caret-color:auto',
+        `font-family:${obj.fontFamily}`,
+        `font-size:${obj.fontSize}px`,
+        `color:${obj.color}`,
+        `line-height:1.2`
+      ];
+      if (obj.rotation) {
+        styles.push(`transform:rotate(${obj.rotation}deg)`);
+        styles.push('transform-origin:0 0');
+      }
+      textInput.style.cssText = styles.join(';');
+      textInput.textContent = prefillText || '';
+      // 清除选中状态，重绘画布（隐藏旧文字，由 div 替代展示）
+      state.selectedObject = null;
+      redrawCanvas();
+    } else {
+      // 新建模式：透明无框，使用工具栏当前设置
+      state.editingTextIndex = null;
+      textInput.style.cssText = [
+        'position:fixed',
+        `left:${x}px`,
+        `top:${y}px`,
+        'background:transparent',
+        'border:none',
+        'padding:0',
+        'margin:0',
+        'z-index:2147483648',
+        'display:block',
+        'outline:none',
+        'white-space:pre-wrap',
+        'word-wrap:break-word',
+        'overflow:visible',
+        'min-width:10px',
+        'min-height:1em',
+        'pointer-events:auto',
+        'caret-color:auto',
+        `font-family:${state.fontFamily}`,
+        `font-size:${state.fontSize}px`,
+        `color:${state.color}`,
+        `line-height:1.2`
+      ].join(';');
+      textInput.textContent = '';
+    }
     requestAnimationFrame(() => {
       textInput.focus();
-      textInput.select();
+      // 若有预填内容，全选以便覆写
+      if (prefillText) {
+        const range = document.createRange();
+        range.selectNodeContents(textInput);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+      }
     });
   }
 
@@ -582,6 +691,7 @@
     canvas.addEventListener('mousemove', handleMouseMove);
     canvas.addEventListener('mouseup', handleMouseUp);
     canvas.addEventListener('mouseleave', handleMouseUp);
+    canvas.addEventListener('dblclick', handleDoubleClick);
     document.addEventListener('keydown', handleKeyDown);
     window.addEventListener('resize', debounce(handleResize, 200));
     
@@ -841,21 +951,26 @@
         ctx.stroke();
         ctx.restore();
       } else if (obj.type === 'text') {
-        ctx.save();
-        
-        // 应用旋转
-        if (obj.rotation) {
-          ctx.translate(obj.x, obj.y);
-          ctx.rotate(obj.rotation * Math.PI / 180);
-          ctx.translate(-obj.x, -obj.y);
+        // 正在编辑的文字由 contenteditable div 展示，画布跳过以免新旧重叠
+        if (state.editingTextIndex !== null && state.objects[state.editingTextIndex] === obj) {
+          // skip — div 已在原位显示
+        } else {
+          ctx.save();
+          
+          // 应用旋转
+          if (obj.rotation) {
+            ctx.translate(obj.x, obj.y);
+            ctx.rotate(obj.rotation * Math.PI / 180);
+            ctx.translate(-obj.x, -obj.y);
+          }
+          
+          ctx.font = `${obj.fontSize}px ${obj.fontFamily}`;
+          ctx.textBaseline = 'top';
+          obj.text.split('\n').forEach((line, i) => {
+            ctx.fillText(line, obj.x, obj.y + i * obj.fontSize * 1.2);
+          });
+          ctx.restore();
         }
-        
-        ctx.font = `${obj.fontSize}px ${obj.fontFamily}`;
-        ctx.textBaseline = 'top';
-        obj.text.split('\n').forEach((line, i) => {
-          ctx.fillText(line, obj.x, obj.y + i * obj.fontSize * 1.2);
-        });
-        ctx.restore();
       } else if (obj.type === 'counter') {
         // 计数圆圈
         ctx.save();
@@ -931,6 +1046,22 @@
     
     ctx.globalAlpha = 1;
     ctx.restore();
+  }
+
+  function handleDoubleClick(e) {
+    if (!state.enabled) return;
+    if (state.isScreenshotMode || state.isFlameshotMode) return;
+    if (state.isPickingColor) return;
+    // 若输入框已打开，先清掉（文字工具首击弹出空白框的情况）
+    if (textInput.style.display === 'block') {
+      textInput.textContent = '';
+      textInput.style.display = 'none';
+    }
+    const hitIndex = hitTest(e.clientX, e.clientY);
+    if (hitIndex !== -1 && state.objects[hitIndex].type === 'text') {
+      const obj = state.objects[hitIndex];
+      showTextInput(obj.x, obj.y, obj.text, hitIndex);
+    }
   }
 
   function handleMouseDown(e) {
@@ -1271,6 +1402,13 @@
       canvas.style.cursor = 'crosshair';
       toolbar.querySelector('#wph-pick-color')?.classList.add('picking');
       showColorPickerTip();
+    }
+    else if (key === 'enter' && state.selectedObject !== null &&
+             state.objects[state.selectedObject].type === 'text') {
+      // Enter 键编辑选中的文字对象
+      e.preventDefault();
+      const obj = state.objects[state.selectedObject];
+      showTextInput(obj.x, obj.y, obj.text, state.selectedObject);
     }
     else if (key === 'delete' || key === 'backspace') {
       if (state.selectedObject !== null && document.activeElement !== textInput) {

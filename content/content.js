@@ -760,7 +760,7 @@
     canvas.addEventListener('mousedown', handleMouseDown);
     canvas.addEventListener('mousemove', handleMouseMove);
     canvas.addEventListener('mouseup', handleMouseUp);
-    canvas.addEventListener('mouseenter', function() { setCanvasCursor(state.tool === 'eraser' ? 'none' : state.tool === 'text' ? 'text' : state.tool === 'hand' ? 'grab' : 'crosshair'); });
+    canvas.addEventListener('mouseenter', function() { setCanvasCursor(state.tool === 'eraser' ? 'none' : state.tool === 'text' ? 'text' : state.tool === 'hand' ? 'default' : 'crosshair'); });
     canvas.addEventListener('mouseleave', function(e) {
       handleMouseUp(e);
       clearPreview();
@@ -1309,7 +1309,7 @@
             state.rotationAngle = selObj.rotation || 0;
             state.lastMouseX = e.clientX;
             state.rotationStartX = e.clientX;
-            setCanvasCursor('grabbing');
+            setCanvasCursor('default');
             return;
           }
         }
@@ -1344,10 +1344,10 @@
         state.lastMouseX = e.clientX;
         
         redrawCanvas();
-        setCanvasCursor('grabbing');
+        setCanvasCursor('default');
       } else {
         state.selectedObjects = [];
-        setCanvasCursor('grab');
+        setCanvasCursor('default');
         redrawCanvas();
       }
       return;
@@ -1458,7 +1458,7 @@
           obj.y2 = d.y2 + dy;
         }
       });
-      setCanvasCursor('grabbing');
+      setCanvasCursor('default');
       redrawCanvas();
       return;
     }
@@ -1489,7 +1489,7 @@
     if (state.tool === 'hand' && state.isDragging) {
       state.isDragging = false;
       state.isRotating = false;
-      setCanvasCursor('grab');
+      setCanvasCursor('default');
       state.selectedObjects.forEach(function(idx) {
         snapDraggedObject(state.objects[idx]);
       });
@@ -1708,7 +1708,7 @@
     if (!canvas) return;
     setCanvasCursor(state.tool === 'eraser' ? 'none' :
                     state.tool === 'text' ? 'text' : 
-                    state.tool === 'hand' ? 'grab' : 
+                    state.tool === 'hand' ? 'default' : 
                     'crosshair');
   }
 

@@ -317,6 +317,12 @@
   grid-template-columns: repeat(5, 1fr);
 }
 
+#wph-canvas.wph-cursor-grab { cursor: grab !important; }
+#wph-canvas.wph-cursor-grabbing { cursor: grabbing !important; }
+#wph-canvas.wph-cursor-none { cursor: none !important; }
+#wph-canvas.wph-cursor-text { cursor: text !important; }
+#wph-canvas.wph-cursor-crosshair { cursor: crosshair !important; }
+
 #wph-text-input {
   box-shadow: 0 12px 30px rgba(35, 30, 22, 0.2);
 }

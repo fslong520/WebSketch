@@ -716,7 +716,7 @@
     // 取色器
     toolbar.querySelector('#wph-pick-color').addEventListener('click', () => {
       state.isPickingColor = true;
-      canvas.style.cursor = 'crosshair';
+      setCursorClass('wph-cursor-crosshair');
       toolbar.querySelector('#wph-pick-color').classList.add('picking');
       showColorPickerTip();
     });
@@ -1308,7 +1308,7 @@
             state.rotationAngle = selObj.rotation || 0;
             state.lastMouseX = e.clientX;
             state.rotationStartX = e.clientX;
-            canvas.style.cursor = 'grabbing';
+            setCursorClass('wph-cursor-grabbing');
             return;
           }
         }
@@ -1343,10 +1343,10 @@
         state.lastMouseX = e.clientX;
         
         redrawCanvas();
-        canvas.style.cursor = 'grabbing';
+        setCursorClass('wph-cursor-grabbing');
       } else {
         state.selectedObjects = [];
-        canvas.style.cursor = 'grab';
+        setCursorClass('wph-cursor-grab');
         redrawCanvas();
       }
       return;
@@ -1457,7 +1457,7 @@
           obj.y2 = d.y2 + dy;
         }
       });
-      canvas.style.cursor = 'grabbing';
+      setCursorClass('wph-cursor-grabbing');
       redrawCanvas();
       return;
     }
@@ -1488,7 +1488,7 @@
     if (state.tool === 'hand' && state.isDragging) {
       state.isDragging = false;
       state.isRotating = false;
-      canvas.style.cursor = 'grab';
+      setCursorClass('wph-cursor-grab');
       state.selectedObjects.forEach(function(idx) {
         snapDraggedObject(state.objects[idx]);
       });
@@ -1641,7 +1641,7 @@
     }
     else if (key === 'p') {
       state.isPickingColor = true;
-      canvas.style.cursor = 'crosshair';
+      setCursorClass('wph-cursor-crosshair');
       toolbar.querySelector('#wph-pick-color')?.classList.add('picking');
       showColorPickerTip();
     }
@@ -1698,12 +1698,18 @@
     });
   }
 
+  function setCursorClass(cls) {
+    if (!canvas) return;
+    canvas.className = canvas.className.replace(/wph-cursor-\S+/g, '').trim();
+    canvas.classList.add(cls);
+  }
+
   function updateCursor() {
     if (!canvas) return;
-    canvas.style.cursor = state.tool === 'eraser' ? 'none' :
-                          state.tool === 'text' ? 'text' : 
-                          state.tool === 'hand' ? 'grab' : 
-                          'crosshair';
+    setCursorClass(state.tool === 'eraser' ? 'wph-cursor-none' :
+                   state.tool === 'text' ? 'wph-cursor-text' : 
+                   state.tool === 'hand' ? 'wph-cursor-grab' : 
+                   'wph-cursor-crosshair');
   }
 
   function isEditableTarget(target) {

@@ -1003,7 +1003,7 @@
       else if (obj.type === 'circle' || obj.type === 'counter') { obj.x = 2 * cx - obj.x; }
       else if (obj.type === 'line' || obj.type === 'arrow') {
         obj.x1 = 2 * cx - obj.x1; obj.x2 = 2 * cx - obj.x2;
-      } else if (obj.type === 'text') { obj.x = 2 * cx - obj.x; }
+      } else if (obj.type === 'text') { /* text content flip is no-op */ }
       else if (obj.type === 'freehand' || obj.type === 'eraser') {
         obj.points.forEach(p => p.x = 2 * cx - p.x);
         if (obj.bbox) { const tx = obj.bbox.minX; obj.bbox.minX = 2 * cx - obj.bbox.maxX; obj.bbox.maxX = 2 * cx - tx; }
@@ -1013,7 +1013,7 @@
       else if (obj.type === 'circle' || obj.type === 'counter') { obj.y = 2 * cy - obj.y; }
       else if (obj.type === 'line' || obj.type === 'arrow') {
         obj.y1 = 2 * cy - obj.y1; obj.y2 = 2 * cy - obj.y2;
-      } else if (obj.type === 'text') { obj.y = 2 * cy - obj.y - obj.fontSize; }
+      } else if (obj.type === 'text') { /* text content flip is no-op */ }
       else if (obj.type === 'freehand' || obj.type === 'eraser') {
         obj.points.forEach(p => p.y = 2 * cy - p.y);
         if (obj.bbox) { const ty = obj.bbox.minY; obj.bbox.minY = 2 * cy - obj.bbox.maxY; obj.bbox.maxY = 2 * cy - ty; }

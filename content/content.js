@@ -735,14 +735,58 @@
       showCopySuccessTip('计数已重置为 1');
     });
     
-    function mirrorSelectedH() {
-      state.selectedObjects.forEach(idx => mirrorObject(state.objects[idx], 'h'));
-      if (state.selectedObjects.length > 0) { redrawCanvas(); saveState(); }
+    function moveObjectBy(obj, dx, dy) {
+      if (obj.type === 'rect' || obj.type === 'circle' || obj.type === 'text' || obj.type === 'counter') {
+        obj.x += dx; obj.y += dy;
+      } else if (obj.type === 'freehand' || obj.type === 'eraser') {
+        obj.points.forEach(function(p) { p.x += dx; p.y += dy; });
+        if (obj.bbox) { obj.bbox.minX += dx; obj.bbox.minY += dy; obj.bbox.maxX += dx; obj.bbox.maxY += dy; }
+      } else if (obj.type === 'line' || obj.type === 'arrow') {
+        obj.x1 += dx; obj.y1 += dy; obj.x2 += dx; obj.y2 += dy;
+      }
     }
-    function mirrorSelectedV() {
-      state.selectedObjects.forEach(idx => mirrorObject(state.objects[idx], 'v'));
-      if (state.selectedObjects.length > 0) { redrawCanvas(); saveState(); }
+    function getObjectCenter(obj) {
+      if (obj.type === 'rect') return { x: obj.x + obj.width / 2, y: obj.y + obj.height / 2 };
+      if (obj.type === 'circle') return { x: obj.x, y: obj.y };
+      if (obj.type === 'freehand' || obj.type === 'eraser') {
+        if (!obj.bbox) computeBbox(obj);
+        if (obj.bbox) return { x: (obj.bbox.minX + obj.bbox.maxX) / 2, y: (obj.bbox.minY + obj.bbox.maxY) / 2 };
+        return { x: 0, y: 0 };
+      }
+      if (obj.type === 'text') {
+        ctx.font = obj.fontSize + 'px ' + obj.fontFamily;
+        return { x: obj.x + ctx.measureText(obj.text).width / 2, y: obj.y + obj.fontSize / 2 };
+      }
+      if (obj.type === 'line' || obj.type === 'arrow') return { x: (obj.x1 + obj.x2) / 2, y: (obj.y1 + obj.y2) / 2 };
+      if (obj.type === 'counter') return { x: obj.x, y: obj.y };
+      return { x: 0, y: 0 };
     }
+    function mirrorGroup(axis) {
+      var indices = state.selectedObjects;
+      if (indices.length === 0) return;
+      var minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+      var centers = [];
+      indices.forEach(function(idx) {
+        var c = getObjectCenter(state.objects[idx]);
+        centers.push(c);
+        if (c.x < minX) minX = c.x;
+        if (c.x > maxX) maxX = c.x;
+        if (c.y < minY) minY = c.y;
+        if (c.y > maxY) maxY = c.y;
+      });
+      var gCx = (minX + maxX) / 2, gCy = (minY + maxY) / 2;
+      indices.forEach(function(idx, i) {
+        var obj = state.objects[idx];
+        var c = centers[i];
+        mirrorObject(obj, axis);
+        if (axis === 'h') moveObjectBy(obj, 2 * (gCx - c.x), 0);
+        else moveObjectBy(obj, 0, 2 * (gCy - c.y));
+      });
+      redrawCanvas();
+      saveState();
+    }
+    function mirrorSelectedH() { mirrorGroup('h'); }
+    function mirrorSelectedV() { mirrorGroup('v'); }
     const actionHandlers = {
       screenshot: startScreenshot,
       undo,

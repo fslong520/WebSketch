@@ -14,6 +14,22 @@
     };
   }
 
+  // 指数移动平均防抖
+  function smoothPoint(rawX, rawY) {
+    if (state.smoothLevel === 0) return { x: rawX, y: rawY };
+    if (state._smoothLastX === undefined) {
+      state._smoothLastX = rawX;
+      state._smoothLastY = rawY;
+      return { x: rawX, y: rawY };
+    }
+    const alpha = 1 / (1 + state.smoothLevel * 2);
+    const sx = alpha * rawX + (1 - alpha) * state._smoothLastX;
+    const sy = alpha * rawY + (1 - alpha) * state._smoothLastY;
+    state._smoothLastX = sx;
+    state._smoothLastY = sy;
+    return { x: sx, y: sy };
+  }
+
   const state = {
     enabled: false, tool: 'brush', color: '#e74c3c', lineWidth: 3,
     opacity: 1, fontSize: 18, fontFamily: 'Microsoft YaHei, sans-serif',
@@ -23,7 +39,7 @@
     showColorPalette: false,
     // 对象系统
     objects: [], // 存储所有绘制对象
-    selectedObject: null, // 当前选中的对象
+    selectedObjects: [], // 当前选中的对象索引数组
     isDragging: false,
     isRotating: false,
     dragOffsetX: 0, dragOffsetY: 0,
@@ -51,7 +67,15 @@
     // 取色器
     isPickingColor: false,
     // 文字编辑状态
-    editingTextIndex: null  // 非 null 时表示正在编辑已有文字对象
+    editingTextIndex: null,  // 非 null 时表示正在编辑已有文字对象
+    // 框选
+    isMarqueeSelecting: false,
+    marqueeStartX: 0,
+    marqueeStartY: 0,
+    marqueeEndX: 0,
+    marqueeEndY: 0,
+    // 防抖平滑
+    smoothLevel: 0
   };
 
   const ICONS = {
@@ -74,7 +98,10 @@
     undo: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7 5 11l4 4"/><path d="M5 11h9a5 5 0 0 1 0 10h-2"/></svg>',
     redo: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 7 4 4-4 4"/><path d="M19 11h-9a5 5 0 0 0 0 10h2"/></svg>',
     trash: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M8 7l1-3h6l1 3"/><path d="m7 7 1 13h8l1-13"/></svg>',
-    save: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h12l2 2v12H5V5Z"/><path d="M8 5v6h8"/><path d="M8 19v-5h8v5"/></svg>'
+    save: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h12l2 2v12H5V5Z"/><path d="M8 5v6h8"/><path d="M8 19v-5h8v5"/></svg>',
+    select: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2" ry="2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="4 3"/><circle cx="4" cy="4" r="2.5" fill="currentColor" stroke="none"/></svg>',
+    mirrorH: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h16" stroke="currentColor" stroke-width="1.5"/><path d="m8 8-4 4 4 4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="m16 8 4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    mirrorV: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v16" stroke="currentColor" stroke-width="1.5"/><path d="m8 16 4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="m8 8 4-4 4 4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>'
   };
 
   const TOOL_DEFS = [
@@ -86,7 +113,8 @@
     { tool: 'circle', label: '圆形', key: 'C', icon: 'circle' },
     { tool: 'line', label: '直线', key: 'L', icon: 'line' },
     { tool: 'arrow', label: '箭头', key: 'A', icon: 'arrow' },
-    { tool: 'counter', label: '计数圆圈', key: 'N', icon: 'counter' }
+    { tool: 'counter', label: '计数圆圈', key: 'N', icon: 'counter' },
+    { tool: 'select', label: '框选', key: 'V', icon: 'select' }
   ];
 
   const MODE_DEFS = [
@@ -157,6 +185,28 @@
 
   function clearPreview() {
     if (previewCtx) previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+  }
+
+  function updateEraserCursor(x, y) {
+    clearPreview();
+    if (!previewCtx || state.tool !== 'eraser') return;
+    const radius = (state.lineWidth * 3) / 2;
+    previewCtx.save();
+    previewCtx.strokeStyle = 'rgba(0,0,0,0.5)';
+    previewCtx.lineWidth = 1.5;
+    previewCtx.setLineDash([4, 4]);
+    previewCtx.beginPath();
+    previewCtx.arc(x, y, radius, 0, Math.PI * 2);
+    previewCtx.stroke();
+    // 内部十字线
+    previewCtx.setLineDash([]);
+    previewCtx.beginPath();
+    previewCtx.moveTo(x - radius * 0.5, y);
+    previewCtx.lineTo(x + radius * 0.5, y);
+    previewCtx.moveTo(x, y - radius * 0.5);
+    previewCtx.lineTo(x, y + radius * 0.5);
+    previewCtx.stroke();
+    previewCtx.restore();
   }
 
   // Shift约束：正方形/正圆/45度线
@@ -417,10 +467,16 @@
         </div>
         <div class="wph-setting-group"><label class="wph-label">粗细</label><input type="range" class="wph-range" id="wph-line-width" min="1" max="50" value="${state.lineWidth}"><span class="wph-value" id="wph-line-width-value">${state.lineWidth}</span></div>
         <div class="wph-setting-group"><label class="wph-label">透明</label><input type="range" class="wph-range" id="wph-opacity" min="0.1" max="1" step="0.1" value="${state.opacity}"><span class="wph-value" id="wph-opacity-value">${Math.round(state.opacity * 100)}%</span></div>
+        <div class="wph-setting-group"><label class="wph-label">平滑</label><input type="range" class="wph-range" id="wph-smooth" min="0" max="5" step="1" value="0"><span class="wph-value" id="wph-smooth-value">0</span></div>
         <div class="wph-setting-group wph-font-group" style="display:none"><label class="wph-label">字号</label><input type="range" class="wph-font-size" min="12" max="72" value="${state.fontSize}"><span class="wph-value">${state.fontSize}px</span></div>
         <div class="wph-divider"></div>
         <div class="wph-mode-group">
           ${MODE_DEFS.map(m => `<button class="wph-mode-btn${m.stateKey && state[m.stateKey] ? ' active' : ''}" id="${m.id}" ${m.stateKey ? `data-toggle="${m.stateKey}"` : `data-action="${m.action}"`} title="${m.label}" aria-label="${m.label}">${icon(m.icon)}<span>${m.label}</span></button>`).join('')}
+        </div>
+        <div class="wph-divider"></div>
+        <div class="wph-mirror-group">
+          <button class="wph-action" data-action="mirrorH" title="水平镜像">${icon('mirrorH')}</button>
+          <button class="wph-action" data-action="mirrorV" title="垂直镜像">${icon('mirrorV')}</button>
         </div>
         <div class="wph-divider"></div>
         <div class="wph-action-group">
@@ -549,7 +605,7 @@
       textInput.style.cssText = styles.join(';');
       textInput.textContent = prefillText || '';
       // 清除选中状态，重绘画布（隐藏旧文字，由 div 替代展示）
-      state.selectedObject = null;
+      state.selectedObjects = [];
       redrawCanvas();
     } else {
       // 新建模式：透明无框，使用工具栏当前设置
@@ -634,6 +690,10 @@
       state.opacity = +e.target.value;
       toolbar.querySelector('#wph-opacity-value').textContent = Math.round(state.opacity * 100) + '%';
     });
+    toolbar.querySelector('#wph-smooth').addEventListener('input', e => {
+      state.smoothLevel = +e.target.value;
+      toolbar.querySelector('#wph-smooth-value').textContent = state.smoothLevel;
+    });
     toolbar.querySelector('.wph-font-size').addEventListener('input', e => {
       state.fontSize = +e.target.value;
       toolbar.querySelector('.wph-font-size + span').textContent = state.fontSize + 'px';
@@ -675,12 +735,22 @@
       showCopySuccessTip('计数已重置为 1');
     });
     
+    function mirrorSelectedH() {
+      state.selectedObjects.forEach(idx => mirrorObject(state.objects[idx], 'h'));
+      if (state.selectedObjects.length > 0) { redrawCanvas(); saveState(); }
+    }
+    function mirrorSelectedV() {
+      state.selectedObjects.forEach(idx => mirrorObject(state.objects[idx], 'v'));
+      if (state.selectedObjects.length > 0) { redrawCanvas(); saveState(); }
+    }
     const actionHandlers = {
       screenshot: startScreenshot,
       undo,
       redo,
       clear: clearCanvas,
-      save: saveImage
+      save: saveImage,
+      mirrorH: mirrorSelectedH,
+      mirrorV: mirrorSelectedV
     };
     toolbar.querySelectorAll('.wph-action[data-action]').forEach(btn => {
       btn.addEventListener('click', () => actionHandlers[btn.dataset.action]?.());
@@ -690,7 +760,10 @@
     canvas.addEventListener('mousedown', handleMouseDown);
     canvas.addEventListener('mousemove', handleMouseMove);
     canvas.addEventListener('mouseup', handleMouseUp);
-    canvas.addEventListener('mouseleave', handleMouseUp);
+    canvas.addEventListener('mouseleave', function(e) {
+      handleMouseUp(e);
+      clearPreview();
+    });
     canvas.addEventListener('dblclick', handleDoubleClick);
     document.addEventListener('keydown', handleKeyDown);
     window.addEventListener('resize', debounce(handleResize, 200));
@@ -805,6 +878,101 @@
     param = Math.max(0, Math.min(1, param));
     const xx = x1 + param * C, yy = y1 + param * D;
     return Math.sqrt((px - xx) ** 2 + (py - yy) ** 2);
+  }
+
+  function getObjectBounds(obj) {
+    if (!obj) return null;
+    if (obj.type === 'rect') {
+      return { x: obj.x - 5, y: obj.y - 5, width: obj.width + 10, height: obj.height + 10 };
+    } else if (obj.type === 'circle') {
+      return { x: obj.x - obj.radiusX - 5, y: obj.y - obj.radiusY - 5, width: obj.radiusX * 2 + 10, height: obj.radiusY * 2 + 10 };
+    } else if (obj.type === 'freehand' || obj.type === 'eraser') {
+      if (obj.bbox) return { x: obj.bbox.minX - 5, y: obj.bbox.minY - 5, width: obj.bbox.maxX - obj.bbox.minX + 10, height: obj.bbox.maxY - obj.bbox.minY + 10 };
+    } else if (obj.type === 'text') {
+      ctx.font = `${obj.fontSize}px ${obj.fontFamily}`;
+      const metrics = ctx.measureText(obj.text);
+      return { x: obj.x - 5, y: obj.y - 5, width: metrics.width + 10, height: obj.fontSize + 10 };
+    } else if (obj.type === 'line' || obj.type === 'arrow') {
+      const minX = Math.min(obj.x1, obj.x2) - 10;
+      const minY = Math.min(obj.y1, obj.y2) - 10;
+      const maxX = Math.max(obj.x1, obj.x2) + 10;
+      const maxY = Math.max(obj.y1, obj.y2) + 10;
+      return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
+    } else if (obj.type === 'counter') {
+      const r = (obj.radius || 20) + 5;
+      return { x: obj.x - r, y: obj.y - r, width: r * 2, height: r * 2 };
+    }
+    return null;
+  }
+
+  function marqueeHitTest(rx, ry, rw, rh) {
+    const hits = [];
+    if (rw < 3 || rh < 3) return hits;
+    for (let i = state.objects.length - 1; i >= 0; i--) {
+      const obj = state.objects[i];
+      const b = getObjectBounds(obj);
+      if (!b) continue;
+      if (b.x < rx + rw && b.x + b.width > rx &&
+          b.y < ry + rh && b.y + b.height > ry) {
+        hits.push(i);
+      }
+    }
+    return hits.reverse(); // 自顶向下排
+  }
+
+  function computeBbox(obj) {
+    if (!obj.points || obj.points.length === 0) return;
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    obj.points.forEach(p => {
+      if (p.x < minX) minX = p.x;
+      if (p.y < minY) minY = p.y;
+      if (p.x > maxX) maxX = p.x;
+      if (p.y > maxY) maxY = p.y;
+    });
+    obj.bbox = { minX, minY, maxX, maxY };
+  }
+
+  function mirrorObject(obj, axis) {
+    if (!obj) return;
+    let cx, cy;
+    if (obj.type === 'rect') {
+      cx = obj.x + obj.width / 2; cy = obj.y + obj.height / 2;
+    } else if (obj.type === 'circle') {
+      cx = obj.x; cy = obj.y;
+    } else if (obj.type === 'line' || obj.type === 'arrow') {
+      cx = (obj.x1 + obj.x2) / 2; cy = (obj.y1 + obj.y2) / 2;
+    } else if (obj.type === 'text') {
+      ctx.font = `${obj.fontSize}px ${obj.fontFamily}`;
+      const tw = ctx.measureText(obj.text).width;
+      cx = obj.x + tw / 2; cy = obj.y + obj.fontSize / 2;
+    } else if (obj.type === 'counter') {
+      cx = obj.x; cy = obj.y;
+    } else if (obj.type === 'freehand' || obj.type === 'eraser') {
+      if (!obj.bbox) computeBbox(obj);
+      cx = (obj.bbox.minX + obj.bbox.maxX) / 2;
+      cy = (obj.bbox.minY + obj.bbox.maxY) / 2;
+    } else { return; }
+    if (axis === 'h') {
+      if (obj.type === 'rect') { obj.x = 2 * cx - obj.x - obj.width; }
+      else if (obj.type === 'circle' || obj.type === 'counter') { obj.x = 2 * cx - obj.x; }
+      else if (obj.type === 'line' || obj.type === 'arrow') {
+        obj.x1 = 2 * cx - obj.x1; obj.x2 = 2 * cx - obj.x2;
+      } else if (obj.type === 'text') { obj.x = 2 * cx - obj.x; }
+      else if (obj.type === 'freehand' || obj.type === 'eraser') {
+        obj.points.forEach(p => p.x = 2 * cx - p.x);
+        if (obj.bbox) { const tx = obj.bbox.minX; obj.bbox.minX = 2 * cx - obj.bbox.maxX; obj.bbox.maxX = 2 * cx - tx; }
+      }
+    } else if (axis === 'v') {
+      if (obj.type === 'rect') { obj.y = 2 * cy - obj.y - obj.height; }
+      else if (obj.type === 'circle' || obj.type === 'counter') { obj.y = 2 * cy - obj.y; }
+      else if (obj.type === 'line' || obj.type === 'arrow') {
+        obj.y1 = 2 * cy - obj.y1; obj.y2 = 2 * cy - obj.y2;
+      } else if (obj.type === 'text') { obj.y = 2 * cy - obj.y - obj.fontSize; }
+      else if (obj.type === 'freehand' || obj.type === 'eraser') {
+        obj.points.forEach(p => p.y = 2 * cy - p.y);
+        if (obj.bbox) { const ty = obj.bbox.minY; obj.bbox.minY = 2 * cy - obj.bbox.maxY; obj.bbox.maxY = 2 * cy - ty; }
+      }
+    }
   }
 
   function redrawCanvas() {
@@ -1002,9 +1170,9 @@
     ctx.setLineDash([]);
     
     // 绘制选中框
-    if (state.selectedObject !== null) {
-      drawSelectionBox(state.objects[state.selectedObject]);
-    }
+    state.selectedObjects.forEach(idx => {
+      drawSelectionBox(state.objects[idx]);
+    });
   }
 
   function drawSelectionBox(obj) {
@@ -1042,6 +1210,25 @@
     
     if (bounds) {
       ctx.strokeRect(bounds.x, bounds.y, bounds.width, bounds.height);
+      
+      // 旋转手柄
+      const hx = bounds.x + bounds.width / 2;
+      const hy = bounds.y - 12;
+      ctx.setLineDash([]);
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = '#0066ff';
+      ctx.beginPath();
+      ctx.moveTo(hx, hy + 6);
+      ctx.lineTo(hx, bounds.y);
+      ctx.stroke();
+      ctx.fillStyle = '#0066ff';
+      ctx.beginPath();
+      ctx.arc(hx, hy, 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.arc(hx, hy, 2.5, 0, Math.PI * 2);
+      ctx.fill();
     }
     
     ctx.globalAlpha = 1;
@@ -1094,54 +1281,72 @@
       return;
     }
     
-    // 手形工具 - 选择并拖拽对象
+    // 框选工具
+    if (state.tool === 'select') {
+      state.isMarqueeSelecting = true;
+      state.marqueeStartX = e.clientX;
+      state.marqueeStartY = e.clientY;
+      state.marqueeEndX = e.clientX;
+      state.marqueeEndY = e.clientY;
+      previewCanvas.style.display = 'block';
+      return;
+    }
+    
+    // 手形工具 - 选择、拖拽、旋转
     if (state.tool === 'hand') {
+      // 旋转手柄检测（用末个选中对象定位）
+      if (state.selectedObjects.length > 0) {
+        const primaryIdx = state.selectedObjects[state.selectedObjects.length - 1];
+        const selObj = state.objects[primaryIdx];
+        const sb = getObjectBounds(selObj);
+        if (sb) {
+          const hx = sb.x + sb.width / 2;
+          const hy = sb.y - 12;
+          if (Math.sqrt((e.clientX - hx) ** 2 + (e.clientY - hy) ** 2) < 14) {
+            state.isDragging = true;
+            state.isRotating = true;
+            state.rotationAngle = selObj.rotation || 0;
+            state.lastMouseX = e.clientX;
+            state.rotationStartX = e.clientX;
+            canvas.style.cursor = 'grabbing';
+            return;
+          }
+        }
+      }
+      
       const hitIndex = hitTest(e.clientX, e.clientY);
       if (hitIndex !== -1) {
-        state.selectedObject = hitIndex;
+        state.selectedObjects = [hitIndex];
         state.isDragging = true;
-        const obj = state.objects[hitIndex];
         
-        if (obj.type === 'rect' || obj.type === 'text' || obj.type === 'freehand' || obj.type === 'eraser') {
-          // 计算边界框
-          let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-          if (obj.type === 'freehand' || obj.type === 'eraser') {
-            obj.points.forEach(p => {
-              minX = Math.min(minX, p.x);
-              minY = Math.min(minY, p.y);
-              maxX = Math.max(maxX, p.x);
-              maxY = Math.max(maxY, p.y);
-            });
-            state.dragOffsetX = e.clientX - minX;
-            state.dragOffsetY = e.clientY - minY;
-            obj.bbox = { minX, minY, maxX, maxY }; // 缓存边界框
-          } else {
-            state.dragOffsetX = e.clientX - obj.x;
-            state.dragOffsetY = e.clientY - obj.y;
+        // 存储初始位置（delta式拖拽，支持多选）
+        state._dragStartX = e.clientX;
+        state._dragStartY = e.clientY;
+        state._dragData = state.selectedObjects.map(function(idx) {
+          const o = state.objects[idx];
+          if (o.type === 'rect' || o.type === 'text' || o.type === 'circle' || o.type === 'counter') {
+            return { type: 'pos', x: o.x, y: o.y, idx: idx };
+          } else if (o.type === 'freehand' || o.type === 'eraser') {
+            if (!o.bbox) computeBbox(o);
+            return { type: 'bbox', bx: o.bbox.minX, by: o.bbox.minY, idx: idx };
+          } else if (o.type === 'line' || o.type === 'arrow') {
+            return { type: 'line', x1: o.x1, y1: o.y1, x2: o.x2, y2: o.y2, idx: idx };
           }
-        } else if (obj.type === 'circle') {
-          state.dragOffsetX = e.clientX - obj.x;
-          state.dragOffsetY = e.clientY - obj.y;
-        } else if (obj.type === 'counter') {
-          state.dragOffsetX = e.clientX - obj.x;
-          state.dragOffsetY = e.clientY - obj.y;
-        } else if (obj.type === 'line' || obj.type === 'arrow') {
-          state.dragOffsetX1 = e.clientX - obj.x1;
-          state.dragOffsetY1 = e.clientY - obj.y1;
-          state.dragOffsetX2 = e.clientX - obj.x2;
-          state.dragOffsetY2 = e.clientY - obj.y2;
-        }
+          return null;
+        }).filter(Boolean);
         
         // 初始化旋转状态
+        const primaryObj = state.objects[hitIndex];
         state.isRotating = false;
-        state.rotationAngle = obj.rotation || 0;
+        state.rotationAngle = primaryObj.rotation || 0;
         state.rotationStartX = e.clientX;
         state.lastMouseX = e.clientX;
         
         redrawCanvas();
         canvas.style.cursor = 'grabbing';
       } else {
-        state.selectedObject = null;
+        state.selectedObjects = [];
+        canvas.style.cursor = 'grab';
         redrawCanvas();
       }
       return;
@@ -1153,6 +1358,8 @@
     state.startX = startSnapped.x;
     state.startY = startSnapped.y;
     if (state.tool === 'brush' || state.tool === 'eraser') {
+      // 重置防抖
+      state._smoothLastX = undefined;
       // 创建新路径对象
       const newPathObj = {
         type: state.tool === 'brush' ? 'freehand' : 'eraser',
@@ -1177,68 +1384,80 @@
       return;
     }
     
+    // 橡皮擦轮廓（始终跟随）
+    if (state.tool === 'eraser') {
+      if (previewCanvas.style.display !== 'block') previewCanvas.style.display = 'block';
+      updateEraserCursor(e.clientX, e.clientY);
+    }
+    
+    // 框选预览
+    if (state.tool === 'select' && state.isMarqueeSelecting) {
+      state.marqueeEndX = e.clientX;
+      state.marqueeEndY = e.clientY;
+      clearPreview();
+      const mx = state.marqueeStartX, my = state.marqueeStartY;
+      const ex = state.marqueeEndX, ey = state.marqueeEndY;
+      const x = Math.min(mx, ex), y = Math.min(my, ey);
+      const w = Math.abs(ex - mx), h = Math.abs(ey - my);
+      if (w < 2 || h < 2) return;
+      previewCtx.save();
+      previewCtx.strokeStyle = '#0066ff';
+      previewCtx.lineWidth = 1.5;
+      previewCtx.setLineDash([5, 5]);
+      previewCtx.strokeRect(x, y, w, h);
+      previewCtx.setLineDash([]);
+      previewCtx.fillStyle = 'rgba(0, 102, 255, 0.06)';
+      previewCtx.fillRect(x, y, w, h);
+      previewCtx.restore();
+      return;
+    }
+    
     // 手形工具 - 拖拽或旋转对象
-    if (state.tool === 'hand' && state.isDragging && state.selectedObject !== null) {
-      const obj = state.objects[state.selectedObject];
+    if (state.tool === 'hand' && state.isDragging && state.selectedObjects.length > 0) {
+      const primaryIdx = state.selectedObjects[0];
       
-      // 按住Shift键旋转
-      if (e.shiftKey) {
-        if (!state.isRotating) {
-          state.isRotating = true;
-          state.lastMouseX = e.clientX;
-        }
-        
+      // Shift键激活旋转
+      if (e.shiftKey && !state.isRotating) {
+        state.isRotating = true;
+        state.lastMouseX = e.clientX;
+        state.rotationAngle = state.objects[primaryIdx].rotation || 0;
+      }
+      
+      // 旋转进行中（手柄/Shift均可触发）
+      if (state.isRotating) {
         const dx = e.clientX - state.lastMouseX;
-        const rotationDelta = dx * 0.5; // 每像素0.5度
+        const rotationDelta = dx * 0.5;
         state.rotationAngle += rotationDelta;
         state.lastMouseX = e.clientX;
-        
-        // 保存旋转角度到对象
-        obj.rotation = state.rotationAngle;
-        
+        state.selectedObjects.forEach(function(idx) {
+          state.objects[idx].rotation = state.rotationAngle;
+        });
         redrawCanvas();
         return;
       }
       
-      // 普通拖拽
-      if (state.isRotating) {
-        state.isRotating = false;
-      }
-      
-      if (obj.type === 'rect' || obj.type === 'text') {
-        obj.x = e.clientX - state.dragOffsetX;
-        obj.y = e.clientY - state.dragOffsetY;
-        canvas.style.cursor = 'grabbing';
-      } else if (obj.type === 'freehand' || obj.type === 'eraser') {
-        // 移动路径的所有点
-        const dx = e.clientX - state.dragOffsetX - obj.bbox.minX;
-        const dy = e.clientY - state.dragOffsetY - obj.bbox.minY;
-        obj.points.forEach(p => {
-          p.x += dx;
-          p.y += dy;
-        });
-        // 更新边界框
-        obj.bbox.minX = e.clientX - state.dragOffsetX;
-        obj.bbox.minY = e.clientY - state.dragOffsetY;
-        obj.bbox.maxX += dx;
-        obj.bbox.maxY += dy;
-        canvas.style.cursor = 'grabbing';
-      } else if (obj.type === 'circle') {
-        obj.x = e.clientX - state.dragOffsetX;
-        obj.y = e.clientY - state.dragOffsetY;
-        canvas.style.cursor = 'grabbing';
-      } else if (obj.type === 'counter') {
-        obj.x = e.clientX - state.dragOffsetX;
-        obj.y = e.clientY - state.dragOffsetY;
-        canvas.style.cursor = 'grabbing';
-      } else if (obj.type === 'line' || obj.type === 'arrow') {
-        obj.x1 = e.clientX - state.dragOffsetX1;
-        obj.y1 = e.clientY - state.dragOffsetY1;
-        obj.x2 = e.clientX - state.dragOffsetX2;
-        obj.y2 = e.clientY - state.dragOffsetY2;
-        canvas.style.cursor = 'grabbing';
-      }
-      
+      // 普通拖拽（基于 delta，支持多选）
+      const dx = e.clientX - state._dragStartX;
+      const dy = e.clientY - state._dragStartY;
+      state._dragData.forEach(function(d) {
+        const obj = state.objects[d.idx];
+        if (d.type === 'pos') {
+          obj.x = d.x + dx;
+          obj.y = d.y + dy;
+        } else if (d.type === 'bbox') {
+          const ox = d.bx + dx - obj.bbox.minX;
+          const oy = d.by + dy - obj.bbox.minY;
+          obj.points.forEach(function(p) { p.x += ox; p.y += oy; });
+          obj.bbox.minX += ox; obj.bbox.minY += oy;
+          obj.bbox.maxX += ox; obj.bbox.maxY += oy;
+        } else if (d.type === 'line') {
+          obj.x1 = d.x1 + dx;
+          obj.y1 = d.y1 + dy;
+          obj.x2 = d.x2 + dx;
+          obj.y2 = d.y2 + dy;
+        }
+      });
+      canvas.style.cursor = 'grabbing';
       redrawCanvas();
       return;
     }
@@ -1248,7 +1467,8 @@
       // 添加点到当前路径对象
       const lastObj = state.objects[state.objects.length - 1];
       if (lastObj && (lastObj.type === 'freehand' || lastObj.type === 'eraser')) {
-        lastObj.points.push({x: e.clientX, y: e.clientY});
+        const p = smoothPoint(e.clientX, e.clientY);
+        lastObj.points.push({x: p.x, y: p.y});
         redrawCanvas();
       }
     } else if (['rect', 'circle', 'line', 'arrow'].includes(state.tool)) {
@@ -1268,13 +1488,34 @@
     if (state.tool === 'hand' && state.isDragging) {
       state.isDragging = false;
       state.isRotating = false;
-      canvas.style.cursor = state.tool === 'hand' ? 'grab' : 'crosshair';
-      if (state.selectedObject !== null) {
-        // 拖拽结束时吸附
-        snapDraggedObject(state.objects[state.selectedObject]);
+      canvas.style.cursor = 'grab';
+      state.selectedObjects.forEach(function(idx) {
+        snapDraggedObject(state.objects[idx]);
+      });
+      if (state.selectedObjects.length > 0) {
         redrawCanvas();
         saveState();
       }
+      return;
+    }
+    
+    // 框选完成 - 自动切手形
+    if (state.tool === 'select' && state.isMarqueeSelecting) {
+      state.isMarqueeSelecting = false;
+      previewCanvas.style.display = 'none';
+      clearPreview();
+      const x = Math.min(state.marqueeStartX, state.marqueeEndX);
+      const y = Math.min(state.marqueeStartY, state.marqueeEndY);
+      const w = Math.abs(state.marqueeEndX - state.marqueeStartX);
+      const h = Math.abs(state.marqueeEndY - state.marqueeStartY);
+      if (w > 5 && h > 5) {
+        state.selectedObjects = marqueeHitTest(x, y, w, h);
+        redrawCanvas();
+      } else {
+        state.selectedObjects = [];
+        redrawCanvas();
+      }
+      selectTool('hand');
       return;
     }
     
@@ -1391,6 +1632,7 @@
     else if (key === 'l') selectTool('line');
     else if (key === 'a') selectTool('arrow');
     else if (key === 'n') selectTool('counter');
+    else if (key === 'v') selectTool('select');
     else if (key === 's') startScreenshot();
     else if (key === 'g') {
       state.gridEnabled = !state.gridEnabled;
@@ -1403,28 +1645,48 @@
       toolbar.querySelector('#wph-pick-color')?.classList.add('picking');
       showColorPickerTip();
     }
-    else if (key === 'enter' && state.selectedObject !== null &&
-             state.objects[state.selectedObject].type === 'text') {
+    else if (key === 'enter' && state.selectedObjects.length > 0 &&
+             state.objects[state.selectedObjects[0]].type === 'text') {
       // Enter 键编辑选中的文字对象
       e.preventDefault();
-      const obj = state.objects[state.selectedObject];
-      showTextInput(obj.x, obj.y, obj.text, state.selectedObject);
+      const idx = state.selectedObjects[0];
+      const obj = state.objects[idx];
+      showTextInput(obj.x, obj.y, obj.text, idx);
     }
     else if (key === 'delete' || key === 'backspace') {
-      if (state.selectedObject !== null && document.activeElement !== textInput) {
+      if (state.selectedObjects.length > 0 && document.activeElement !== textInput) {
         e.preventDefault();
-        state.objects.splice(state.selectedObject, 1);
-        state.selectedObject = null;
+        const sorted = [...state.selectedObjects].sort(function(a, b) { return b - a; });
+        sorted.forEach(function(idx) { state.objects.splice(idx, 1); });
+        state.selectedObjects = [];
         redrawCanvas();
         saveState();
       }
     }
+    else if (key === '[' && state.selectedObjects.length > 0) {
+      state.selectedObjects.forEach(function(idx) {
+        state.objects[idx].rotation = (state.objects[idx].rotation || 0) - 15;
+      });
+      redrawCanvas();
+      saveState();
+    }
+    else if (key === ']' && state.selectedObjects.length > 0) {
+      state.selectedObjects.forEach(function(idx) {
+        state.objects[idx].rotation = (state.objects[idx].rotation || 0) + 15;
+      });
+      redrawCanvas();
+      saveState();
+    }
   }
 
   function selectTool(tool) {
+    const prevTool = state.tool;
     state.tool = tool;
+    clearPreview();
     syncToolbarState();
     updateCursor();
+    if (prevTool === 'eraser' || prevTool === 'select') previewCanvas.style.display = 'none';
+    if (tool === 'eraser') previewCanvas.style.display = 'block';
   }
 
   function syncToolbarState() {
@@ -1438,7 +1700,7 @@
 
   function updateCursor() {
     if (!canvas) return;
-    canvas.style.cursor = state.tool === 'eraser' ? 'cell' : 
+    canvas.style.cursor = state.tool === 'eraser' ? 'none' :
                           state.tool === 'text' ? 'text' : 
                           state.tool === 'hand' ? 'grab' : 
                           'crosshair';
@@ -1551,7 +1813,7 @@
     if (state.historyIndex > 0) {
       state.historyIndex--;
       state.objects = JSON.parse(JSON.stringify(state.history[state.historyIndex]));
-      state.selectedObject = null;
+      state.selectedObjects = [];
       redrawCanvas();
     }
   }
@@ -1560,14 +1822,14 @@
     if (state.historyIndex < state.history.length - 1) {
       state.historyIndex++;
       state.objects = JSON.parse(JSON.stringify(state.history[state.historyIndex]));
-      state.selectedObject = null;
+      state.selectedObjects = [];
       redrawCanvas();
     }
   }
 
   function clearCanvas() {
     state.objects = [];
-    state.selectedObject = null;
+    state.selectedObjects = [];
     redrawCanvas();
     saveState();
   }

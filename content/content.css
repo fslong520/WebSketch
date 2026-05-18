@@ -305,6 +305,12 @@
   transition: background 150ms ease-out, border-color 150ms ease-out, color 150ms ease-out, transform 120ms ease-out;
 }
 
+.wph-mirror-group {
+  display: grid;
+  gap: 6px;
+  grid-template-columns: repeat(2, 1fr);
+}
+
 .wph-action-group {
   display: grid;
   gap: 6px;

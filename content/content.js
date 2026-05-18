@@ -1317,7 +1317,10 @@
       
       const hitIndex = hitTest(e.clientX, e.clientY);
       if (hitIndex !== -1) {
-        state.selectedObjects = [hitIndex];
+        // 若点击已在选中集则保留多选，否则切为单选
+        if (!state.selectedObjects.includes(hitIndex)) {
+          state.selectedObjects = [hitIndex];
+        }
         state.isDragging = true;
         
         // 存储初始位置（delta式拖拽，支持多选）

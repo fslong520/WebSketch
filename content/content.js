@@ -164,7 +164,7 @@
   function createCanvas() {
     canvas = document.createElement('canvas');
     canvas.id = 'wph-canvas';
-    canvas.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:2147483647;cursor:crosshair;display:none;pointer-events:auto;';
+    canvas.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:2147483647;display:none;pointer-events:auto;';
     setCanvasSize(canvas);
     document.body.appendChild(canvas);
     ctx = canvas.getContext('2d');
@@ -716,7 +716,7 @@
     // 取色器
     toolbar.querySelector('#wph-pick-color').addEventListener('click', () => {
       state.isPickingColor = true;
-      setCursorClass('wph-cursor-crosshair');
+      setCanvasCursor('crosshair');
       toolbar.querySelector('#wph-pick-color').classList.add('picking');
       showColorPickerTip();
     });
@@ -760,6 +760,7 @@
     canvas.addEventListener('mousedown', handleMouseDown);
     canvas.addEventListener('mousemove', handleMouseMove);
     canvas.addEventListener('mouseup', handleMouseUp);
+    canvas.addEventListener('mouseenter', function() { setCanvasCursor(state.tool === 'eraser' ? 'none' : state.tool === 'text' ? 'text' : state.tool === 'hand' ? 'grab' : 'crosshair'); });
     canvas.addEventListener('mouseleave', function(e) {
       handleMouseUp(e);
       clearPreview();
@@ -1308,7 +1309,7 @@
             state.rotationAngle = selObj.rotation || 0;
             state.lastMouseX = e.clientX;
             state.rotationStartX = e.clientX;
-            setCursorClass('wph-cursor-grabbing');
+            setCanvasCursor('grabbing');
             return;
           }
         }
@@ -1343,10 +1344,10 @@
         state.lastMouseX = e.clientX;
         
         redrawCanvas();
-        setCursorClass('wph-cursor-grabbing');
+        setCanvasCursor('grabbing');
       } else {
         state.selectedObjects = [];
-        setCursorClass('wph-cursor-grab');
+        setCanvasCursor('grab');
         redrawCanvas();
       }
       return;
@@ -1457,7 +1458,7 @@
           obj.y2 = d.y2 + dy;
         }
       });
-      setCursorClass('wph-cursor-grabbing');
+      setCanvasCursor('grabbing');
       redrawCanvas();
       return;
     }
@@ -1488,7 +1489,7 @@
     if (state.tool === 'hand' && state.isDragging) {
       state.isDragging = false;
       state.isRotating = false;
-      setCursorClass('wph-cursor-grab');
+      setCanvasCursor('grab');
       state.selectedObjects.forEach(function(idx) {
         snapDraggedObject(state.objects[idx]);
       });
@@ -1641,7 +1642,7 @@
     }
     else if (key === 'p') {
       state.isPickingColor = true;
-      setCursorClass('wph-cursor-crosshair');
+      setCanvasCursor('crosshair');
       toolbar.querySelector('#wph-pick-color')?.classList.add('picking');
       showColorPickerTip();
     }
@@ -1698,18 +1699,17 @@
     });
   }
 
-  function setCursorClass(cls) {
+  function setCanvasCursor(v) {
     if (!canvas) return;
-    canvas.className = canvas.className.replace(/wph-cursor-\S+/g, '').trim();
-    canvas.classList.add(cls);
+    canvas.style.cursor = v;
   }
 
   function updateCursor() {
     if (!canvas) return;
-    setCursorClass(state.tool === 'eraser' ? 'wph-cursor-none' :
-                   state.tool === 'text' ? 'wph-cursor-text' : 
-                   state.tool === 'hand' ? 'wph-cursor-grab' : 
-                   'wph-cursor-crosshair');
+    setCanvasCursor(state.tool === 'eraser' ? 'none' :
+                    state.tool === 'text' ? 'text' : 
+                    state.tool === 'hand' ? 'grab' : 
+                    'crosshair');
   }
 
   function isEditableTarget(target) {

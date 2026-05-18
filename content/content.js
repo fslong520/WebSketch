@@ -888,6 +888,7 @@
     } else if (obj.type === 'circle') {
       return { x: obj.x - obj.radiusX - 5, y: obj.y - obj.radiusY - 5, width: obj.radiusX * 2 + 10, height: obj.radiusY * 2 + 10 };
     } else if (obj.type === 'freehand' || obj.type === 'eraser') {
+      if (!obj.bbox) computeBbox(obj);
       if (obj.bbox) return { x: obj.bbox.minX - 5, y: obj.bbox.minY - 5, width: obj.bbox.maxX - obj.bbox.minX + 10, height: obj.bbox.maxY - obj.bbox.minY + 10 };
     } else if (obj.type === 'text') {
       ctx.font = `${obj.fontSize}px ${obj.fontFamily}`;
@@ -1323,21 +1324,19 @@
         }
         state.isDragging = true;
         
-        // 存储初始位置（delta式拖拽，支持多选）
-        state._dragStartX = e.clientX;
-        state._dragStartY = e.clientY;
-        state._dragData = state.selectedObjects.map(function(idx) {
+        // 为每个选中对象记录鼠标偏移
+        state._dragOffsets = {};
+        state.selectedObjects.forEach(function(idx) {
           const o = state.objects[idx];
           if (o.type === 'rect' || o.type === 'text' || o.type === 'circle' || o.type === 'counter') {
-            return { type: 'pos', x: o.x, y: o.y, idx: idx };
+            state._dragOffsets[idx] = { ox: e.clientX - o.x, oy: e.clientY - o.y };
           } else if (o.type === 'freehand' || o.type === 'eraser') {
             if (!o.bbox) computeBbox(o);
-            return { type: 'bbox', bx: o.bbox.minX, by: o.bbox.minY, idx: idx };
+            state._dragOffsets[idx] = { type: 'bbox', ox: e.clientX - o.bbox.minX, oy: e.clientY - o.bbox.minY };
           } else if (o.type === 'line' || o.type === 'arrow') {
-            return { type: 'line', x1: o.x1, y1: o.y1, x2: o.x2, y2: o.y2, idx: idx };
+            state._dragOffsets[idx] = { type: 'line', ox1: e.clientX - o.x1, oy1: e.clientY - o.y1, ox2: e.clientX - o.x2, oy2: e.clientY - o.y2 };
           }
-          return null;
-        }).filter(Boolean);
+        });
         
         // 初始化旋转状态
         const primaryObj = state.objects[hitIndex];
@@ -1440,25 +1439,22 @@
         return;
       }
       
-      // 普通拖拽（基于 delta，支持多选）
-      const dx = e.clientX - state._dragStartX;
-      const dy = e.clientY - state._dragStartY;
-      state._dragData.forEach(function(d) {
-        const obj = state.objects[d.idx];
-        if (d.type === 'pos') {
-          obj.x = d.x + dx;
-          obj.y = d.y + dy;
-        } else if (d.type === 'bbox') {
-          const ox = d.bx + dx - obj.bbox.minX;
-          const oy = d.by + dy - obj.bbox.minY;
-          obj.points.forEach(function(p) { p.x += ox; p.y += oy; });
-          obj.bbox.minX += ox; obj.bbox.minY += oy;
-          obj.bbox.maxX += ox; obj.bbox.maxY += oy;
-        } else if (d.type === 'line') {
-          obj.x1 = d.x1 + dx;
-          obj.y1 = d.y1 + dy;
-          obj.x2 = d.x2 + dx;
-          obj.y2 = d.y2 + dy;
+      // 普通拖拽（按偏移表移动全部选中对象）
+      state.selectedObjects.forEach(function(idx) {
+        const obj = state.objects[idx];
+        const off = state._dragOffsets[idx];
+        if (!off) return;
+        if (off.type === 'bbox') {
+          const dx = e.clientX - off.ox - obj.bbox.minX;
+          const dy = e.clientY - off.oy - obj.bbox.minY;
+          obj.points.forEach(function(p) { p.x += dx; p.y += dy; });
+          obj.bbox.minX += dx; obj.bbox.minY += dy;
+          obj.bbox.maxX += dx; obj.bbox.maxY += dy;
+        } else if (off.type === 'line') {
+          obj.x1 = e.clientX - off.ox1; obj.y1 = e.clientY - off.oy1;
+          obj.x2 = e.clientX - off.ox2; obj.y2 = e.clientY - off.oy2;
+        } else {
+          obj.x = e.clientX - off.ox; obj.y = e.clientY - off.oy;
         }
       });
       setCanvasCursor('default');

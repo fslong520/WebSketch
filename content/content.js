@@ -278,10 +278,12 @@
       } else if (obj.type === 'counter') {
         points.push({ x: obj.x, y: obj.y });
       } else if (obj.type === 'coord-grid') {
-        // 原点 + X轴端点 + Y轴端点
+        // 原点 + 四向端点
         points.push({ x: obj.originX, y: obj.originY });
         points.push({ x: obj.originX + obj.axisLengthX, y: obj.originY });
+        points.push({ x: obj.originX - obj.axisLengthX, y: obj.originY });
         points.push({ x: obj.originX, y: obj.originY + obj.axisLengthY });
+        points.push({ x: obj.originX, y: obj.originY - obj.axisLengthY });
       } else if ((obj.type === 'freehand' || obj.type === 'eraser') && obj.points) {
         // 路径首尾
         if (obj.points.length > 0) {
@@ -937,7 +939,7 @@
         const r = obj.radius || 20;
         if (dx * dx + dy * dy <= r * r) return i;
       } else if (obj.type === 'coord-grid') {
-        // 坐标系命中检测
+        // 坐标系命中检测（双向十字）
         let testX = x, testY = y;
         if (obj.rotation) {
           const angle = -obj.rotation * Math.PI / 180;
@@ -947,17 +949,16 @@
           testY = dx2 * Math.sin(angle) + dy2 * Math.cos(angle) + obj.originY;
         }
         const ox = obj.originX, oy = obj.originY;
-        const xEnd = ox + obj.axisLengthX;
-        const yEnd = oy + obj.axisLengthY;
-        // 检查是否在原点附近
+        const absX = Math.abs(obj.axisLengthX);
+        const absY = Math.abs(obj.axisLengthY);
+        const xNeg = ox - absX, xPos = ox + absX;
+        const yNeg = oy - absY, yPos = oy + absY;
         const distOrigin = Math.sqrt((testX - ox) ** 2 + (testY - oy) ** 2);
         if (distOrigin < 15) return i;
-        // 检查是否在X轴附近
-        const distX = pointToLineDistance(testX, testY, ox, oy, xEnd, oy);
-        if (distX < 10 && testX >= Math.min(ox, xEnd) && testX <= Math.max(ox, xEnd)) return i;
-        // 检查是否在Y轴附近
-        const distY = pointToLineDistance(testX, testY, ox, oy, ox, yEnd);
-        if (distY < 10 && testY >= Math.min(oy, yEnd) && testY <= Math.max(oy, yEnd)) return i;
+        const distX = pointToLineDistance(testX, testY, xNeg, oy, xPos, oy);
+        if (distX < 10 && testX >= xNeg && testX <= xPos) return i;
+        const distY = pointToLineDistance(testX, testY, ox, yNeg, ox, yPos);
+        if (distY < 10 && testY >= yNeg && testY <= yPos) return i;
       }
     }
     return -1;
@@ -996,10 +997,12 @@
       const r = (obj.radius || 20) + 5;
       return { x: obj.x - r, y: obj.y - r, width: r * 2, height: r * 2 };
     } else if (obj.type === 'coord-grid') {
-      const minX = Math.min(obj.originX, obj.originX + obj.axisLengthX) - 10;
-      const minY = Math.min(obj.originY, obj.originY + obj.axisLengthY) - 10;
-      const maxX = Math.max(obj.originX, obj.originX + obj.axisLengthX) + 10;
-      const maxY = Math.max(obj.originY, obj.originY + obj.axisLengthY) + 10;
+      const absX = Math.abs(obj.axisLengthX);
+      const absY = Math.abs(obj.axisLengthY);
+      const minX = obj.originX - absX - 10;
+      const minY = obj.originY - absY - 10;
+      const maxX = obj.originX + absX + 10;
+      const maxY = obj.originY + absY + 10;
       return { x: minX - 5, y: minY - 5, width: maxX - minX + 10, height: maxY - minY + 10 };
     }
     return null;
@@ -1077,6 +1080,36 @@
         if (obj.bbox) { const ty = obj.bbox.minY; obj.bbox.minY = 2 * cy - obj.bbox.maxY; obj.bbox.maxY = 2 * cy - ty; }
       }
     }
+  }
+
+  // 初始化群组旋转状态：计算群组中心，存储各对象初始位置和旋转
+  function initGroupRotationState(e) {
+    let sumX = 0, sumY = 0, count = 0;
+    state.selectedObjects.forEach(function(idx) {
+      const b = getObjectBounds(state.objects[idx]);
+      if (b) { sumX += b.x + b.width / 2; sumY += b.y + b.height / 2; count++; }
+    });
+    state._groupCenter = count > 0 ? { x: sumX / count, y: sumY / count } : { x: e.clientX, y: e.clientY };
+    state._rotateInitStates = {};
+    state.selectedObjects.forEach(function(idx) {
+      const o = state.objects[idx];
+      const init = { rot: o.rotation || 0 };
+      if (o.type === 'rect') {
+        init.pos = { x: o.x, y: o.y, w: o.width, h: o.height };
+      } else if (o.type === 'circle' || o.type === 'text' || o.type === 'counter') {
+        init.pos = { x: o.x, y: o.y };
+      } else if (o.type === 'line' || o.type === 'arrow') {
+        init.pos = { x1: o.x1, y1: o.y1, x2: o.x2, y2: o.y2 };
+      } else if (o.type === 'freehand' || o.type === 'eraser') {
+        if (!o.bbox) computeBbox(o);
+        init.pos = { points: o.points.map(function(p) { return { x: p.x, y: p.y }; }) };
+      } else if (o.type === 'coord-grid') {
+        init.pos = { ox: o.originX, oy: o.originY };
+      } else {
+        init.pos = { x: 0, y: 0 };
+      }
+      state._rotateInitStates[idx] = init;
+    });
   }
 
   function redrawCanvas() {
@@ -1295,7 +1328,6 @@
 
   function drawCoordGridOnCanvas(ctx, obj, isPreview) {
     ctx.save();
-    // 旋转支持（以原点为中心）
     if (obj.rotation) {
       ctx.translate(obj.originX, obj.originY);
       ctx.rotate(obj.rotation * Math.PI / 180);
@@ -1303,8 +1335,12 @@
     }
     
     const ox = obj.originX, oy = obj.originY;
-    const xEnd = ox + obj.axisLengthX;
-    const yEnd = oy + obj.axisLengthY;
+    const absX = Math.abs(obj.axisLengthX);
+    const absY = Math.abs(obj.axisLengthY);
+    const xNeg = ox - absX;
+    const xPos = ox + absX;
+    const yNeg = oy - absY;
+    const yPos = oy + absY;
     
     const color = isPreview ? '#888' : obj.color;
     const lw = isPreview ? 1 : Math.max(1, obj.lineWidth || 2);
@@ -1317,118 +1353,116 @@
     
     if (isPreview) ctx.setLineDash([6, 4]);
     
-    // a) 绘制 X 轴
+    // a) X轴（全线）
     ctx.beginPath();
-    ctx.moveTo(ox, oy);
-    ctx.lineTo(xEnd, oy);
+    ctx.moveTo(xNeg, oy);
+    ctx.lineTo(xPos, oy);
     ctx.stroke();
     
-    // b) 绘制 Y 轴
+    // b) Y轴（全线）
     ctx.beginPath();
-    ctx.moveTo(ox, oy);
-    ctx.lineTo(ox, yEnd);
+    ctx.moveTo(ox, yNeg);
+    ctx.lineTo(ox, yPos);
     ctx.stroke();
     
-    // c) 绘制箭头
+    // c) 箭头（两端）
     const arrowSize = isPreview ? 8 : 12;
-    // X轴箭头
-    if (Math.abs(obj.axisLengthX) > arrowSize * 2) {
-      const xDir = obj.axisLengthX > 0 ? 1 : -1;
-      const ax = ox + obj.axisLengthX;
-      ctx.beginPath();
-      ctx.moveTo(ax, oy);
-      ctx.lineTo(ax - xDir * arrowSize, oy - arrowSize / 2);
-      ctx.moveTo(ax, oy);
-      ctx.lineTo(ax - xDir * arrowSize, oy + arrowSize / 2);
+    if (absX > arrowSize * 2) {
+      // X轴正端
+      ctx.beginPath(); ctx.moveTo(xPos, oy);
+      ctx.lineTo(xPos - arrowSize, oy - arrowSize / 2);
+      ctx.moveTo(xPos, oy);
+      ctx.lineTo(xPos - arrowSize, oy + arrowSize / 2);
+      ctx.stroke();
+      // X轴负端
+      ctx.beginPath(); ctx.moveTo(xNeg, oy);
+      ctx.lineTo(xNeg + arrowSize, oy - arrowSize / 2);
+      ctx.moveTo(xNeg, oy);
+      ctx.lineTo(xNeg + arrowSize, oy + arrowSize / 2);
       ctx.stroke();
     }
-    // Y轴箭头
-    if (Math.abs(obj.axisLengthY) > arrowSize * 2) {
-      const yDir = obj.axisLengthY > 0 ? 1 : -1;
-      const ay = oy + obj.axisLengthY;
-      ctx.beginPath();
-      ctx.moveTo(ox, ay);
-      ctx.lineTo(ox - arrowSize / 2, ay - yDir * arrowSize);
-      ctx.moveTo(ox, ay);
-      ctx.lineTo(ox + arrowSize / 2, ay - yDir * arrowSize);
+    if (absY > arrowSize * 2) {
+      // Y轴正端
+      ctx.beginPath(); ctx.moveTo(ox, yPos);
+      ctx.lineTo(ox - arrowSize / 2, yPos - arrowSize);
+      ctx.moveTo(ox, yPos);
+      ctx.lineTo(ox + arrowSize / 2, yPos - arrowSize);
+      ctx.stroke();
+      // Y轴负端
+      ctx.beginPath(); ctx.moveTo(ox, yNeg);
+      ctx.lineTo(ox - arrowSize / 2, yNeg + arrowSize);
+      ctx.moveTo(ox, yNeg);
+      ctx.lineTo(ox + arrowSize / 2, yNeg + arrowSize);
       ctx.stroke();
     }
     
-    // d) 刻度线
+    // d) 刻度线（双向）
     if (!isPreview || true) {
       const tickSpacing = obj.tickSpacing || 50;
       const tickLen = isPreview ? 4 : (obj.tickLength || 6);
       ctx.lineWidth = isPreview ? 0.5 : Math.max(0.5, lw * 0.5);
       ctx.globalAlpha = isPreview ? 0.4 : alpha * 0.7;
       
-      // X轴刻度
-      const xStep = obj.axisLengthX > 0 ? tickSpacing : -tickSpacing;
-      const xCount = Math.floor(Math.abs(obj.axisLengthX) / tickSpacing);
+      // X轴刻度（正负双向）
+      const xCount = Math.floor(absX / tickSpacing);
       for (let i = 1; i <= xCount; i++) {
-        const tx = ox + i * xStep;
-        ctx.beginPath();
-        ctx.moveTo(tx, oy - tickLen);
-        ctx.lineTo(tx, oy + tickLen);
-        ctx.stroke();
+        const tp = ox + i * tickSpacing;
+        ctx.beginPath(); ctx.moveTo(tp, oy - tickLen); ctx.lineTo(tp, oy + tickLen); ctx.stroke();
+        const tn = ox - i * tickSpacing;
+        ctx.beginPath(); ctx.moveTo(tn, oy - tickLen); ctx.lineTo(tn, oy + tickLen); ctx.stroke();
       }
       
-      // Y轴刻度
-      const yStep = obj.axisLengthY > 0 ? tickSpacing : -tickSpacing;
-      const yCount = Math.floor(Math.abs(obj.axisLengthY) / tickSpacing);
+      // Y轴刻度（正负双向）
+      const yCount = Math.floor(absY / tickSpacing);
       for (let i = 1; i <= yCount; i++) {
-        const ty = oy + i * yStep;
-        ctx.beginPath();
-        ctx.moveTo(ox - tickLen, ty);
-        ctx.lineTo(ox + tickLen, ty);
-        ctx.stroke();
+        const tp = oy + i * tickSpacing;
+        ctx.beginPath(); ctx.moveTo(ox - tickLen, tp); ctx.lineTo(ox + tickLen, tp); ctx.stroke();
+        const tn = oy - i * tickSpacing;
+        ctx.beginPath(); ctx.moveTo(ox - tickLen, tn); ctx.lineTo(ox + tickLen, tn); ctx.stroke();
       }
     }
     
-    // e) 网格线（仅非预览时）
+    // e) 网格线（双向，仅非预览时）
     if (!isPreview && obj.showGridLines) {
       ctx.lineWidth = 0.5;
       ctx.globalAlpha = alpha * 0.15;
       ctx.setLineDash([3, 6]);
       const tickSpacing = obj.tickSpacing || 50;
       
-      const xStep = obj.axisLengthX > 0 ? tickSpacing : -tickSpacing;
-      const xCount = Math.floor(Math.abs(obj.axisLengthX) / tickSpacing);
+      const xCount = Math.floor(absX / tickSpacing);
       for (let i = 1; i <= xCount; i++) {
-        const tx = ox + i * xStep;
-        ctx.beginPath();
-        ctx.moveTo(tx, oy);
-        ctx.lineTo(tx, oy + obj.axisLengthY);
-        ctx.stroke();
+        const tp = ox + i * tickSpacing;
+        ctx.beginPath(); ctx.moveTo(tp, oy); ctx.lineTo(tp, yPos); ctx.stroke();
+        const tn = ox - i * tickSpacing;
+        ctx.beginPath(); ctx.moveTo(tn, oy); ctx.lineTo(tn, yPos); ctx.stroke();
       }
       
-      const yStep = obj.axisLengthY > 0 ? tickSpacing : -tickSpacing;
-      const yCount = Math.floor(Math.abs(obj.axisLengthY) / tickSpacing);
+      const yCount = Math.floor(absY / tickSpacing);
       for (let i = 1; i <= yCount; i++) {
-        const ty = oy + i * yStep;
-        ctx.beginPath();
-        ctx.moveTo(ox, ty);
-        ctx.lineTo(ox + obj.axisLengthX, ty);
-        ctx.stroke();
+        const tp = oy + i * tickSpacing;
+        ctx.beginPath(); ctx.moveTo(ox, tp); ctx.lineTo(xPos, tp); ctx.stroke();
+        const tn = oy - i * tickSpacing;
+        ctx.beginPath(); ctx.moveTo(ox, tn); ctx.lineTo(xPos, tn); ctx.stroke();
       }
       ctx.setLineDash([]);
     }
     
-    // f) 轴标签
+    // f) 轴标签（两端标注）
     if (!isPreview && obj.labelX) {
       ctx.globalAlpha = alpha;
       ctx.font = '12px sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'top';
-      const lx = xEnd + (obj.axisLengthX > 0 ? 8 : -8);
-      ctx.fillText(obj.labelX, lx, oy + 4);
+      ctx.fillText(obj.labelX, xPos + 8, oy + 4);
+      ctx.fillText('-' + obj.labelX, xNeg - 8, oy + 4);
     }
     if (!isPreview && obj.labelY) {
       ctx.globalAlpha = alpha;
       ctx.font = '12px sans-serif';
-      ctx.textAlign = 'left';
+      ctx.textAlign = 'right';
       ctx.textBaseline = 'middle';
-      const ly = yEnd + (obj.axisLengthY > 0 ? 8 : -8);
-      ctx.fillText(obj.labelY, ox + 4, ly);
+      ctx.fillText(obj.labelY, ox - 6, yPos + 8);
+      ctx.fillText('-' + obj.labelY, ox - 6, yNeg - 8);
     }
     
     // g) 原点标记
@@ -1478,10 +1512,12 @@
       const r = obj.radius || 20;
       bounds = { x: obj.x - r - 5, y: obj.y - r - 5, width: r * 2 + 10, height: r * 2 + 10 };
     } else if (obj.type === 'coord-grid') {
-      const minX = Math.min(obj.originX, obj.originX + obj.axisLengthX) - 10;
-      const minY = Math.min(obj.originY, obj.originY + obj.axisLengthY) - 10;
-      const maxX = Math.max(obj.originX, obj.originX + obj.axisLengthX) + 10;
-      const maxY = Math.max(obj.originY, obj.originY + obj.axisLengthY) + 10;
+      const absX = Math.abs(obj.axisLengthX);
+      const absY = Math.abs(obj.axisLengthY);
+      const minX = obj.originX - absX - 10;
+      const minY = obj.originY - absY - 10;
+      const maxX = obj.originX + absX + 10;
+      const maxY = obj.originY + absY + 10;
       bounds = { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
     }
     
@@ -1582,9 +1618,11 @@
           if (Math.sqrt((e.clientX - hx) ** 2 + (e.clientY - hy) ** 2) < 14) {
             state.isDragging = true;
             state.isRotating = true;
-            state.rotationAngle = selObj.rotation || 0;
+            state.rotationAngle = 0;
             state.lastMouseX = e.clientX;
             state.rotationStartX = e.clientX;
+            // 计算群组中心及各对象初始状态
+            initGroupRotationState(e);
             setCanvasCursor('default');
             return;
           }
@@ -1706,7 +1744,8 @@
       if (e.shiftKey && !state.isRotating) {
         state.isRotating = true;
         state.lastMouseX = e.clientX;
-        state.rotationAngle = state.objects[primaryIdx].rotation || 0;
+        state.rotationAngle = 0;
+        initGroupRotationState(e);
       }
       
       // 旋转进行中（手柄/Shift均可触发）
@@ -1715,8 +1754,61 @@
         const rotationDelta = dx * 0.5;
         state.rotationAngle += rotationDelta;
         state.lastMouseX = e.clientX;
+
+        const gc = state._groupCenter;
+        const cx = gc.x, cy = gc.y;
+        const angleRad = state.rotationAngle * Math.PI / 180;
+        const cosA = Math.cos(angleRad), sinA = Math.sin(angleRad);
+
         state.selectedObjects.forEach(function(idx) {
-          state.objects[idx].rotation = state.rotationAngle;
+          const obj = state.objects[idx];
+          const init = state._rotateInitStates[idx];
+          if (!init) return;
+
+          // 旋转属性：自身初值 + 累积增量
+          obj.rotation = (init.rot || 0) + state.rotationAngle;
+
+          // 按类型旋转位置
+          const type = obj.type;
+          const p = init.pos;
+          let icx, icy;
+
+          if (type === 'rect') {
+            icx = p.x + p.w / 2; icy = p.y + p.h / 2;
+          } else if (type === 'circle' || type === 'text' || type === 'counter') {
+            icx = p.x; icy = p.y;
+          } else if (type === 'line' || type === 'arrow') {
+            icx = (p.x1 + p.x2) / 2; icy = (p.y1 + p.y2) / 2;
+          } else if (type === 'coord-grid') {
+            icx = p.ox; icy = p.oy;
+          } else if (type === 'freehand' || type === 'eraser') {
+            icx = 0; icy = 0;
+            p.points.forEach(function(pp) { icx += pp.x; icy += pp.y; });
+            icx /= p.points.length; icy /= p.points.length;
+          } else { return; }
+
+          const ncx = cx + (icx - cx) * cosA - (icy - cy) * sinA;
+          const ncy = cy + (icx - cx) * sinA + (icy - cy) * cosA;
+
+          if (type === 'rect') {
+            obj.x = ncx - obj.width / 2;
+            obj.y = ncy - obj.height / 2;
+          } else if (type === 'circle' || type === 'text' || type === 'counter') {
+            obj.x = ncx; obj.y = ncy;
+          } else if (type === 'line' || type === 'arrow') {
+            obj.x1 = ncx + (p.x1 - icx) * cosA - (p.y1 - icy) * sinA;
+            obj.y1 = ncy + (p.x1 - icx) * sinA + (p.y1 - icy) * cosA;
+            obj.x2 = ncx + (p.x2 - icx) * cosA - (p.y2 - icy) * sinA;
+            obj.y2 = ncy + (p.x2 - icx) * sinA + (p.y2 - icy) * cosA;
+          } else if (type === 'coord-grid') {
+            obj.originX = ncx; obj.originY = ncy;
+          } else if (type === 'freehand' || type === 'eraser') {
+            p.points.forEach(function(pp, i) {
+              obj.points[i].x = cx + (pp.x - cx) * cosA - (pp.y - cy) * sinA;
+              obj.points[i].y = cy + (pp.x - cx) * sinA + (pp.y - cy) * cosA;
+            });
+            computeBbox(obj);
+          }
         });
         redrawCanvas();
         return;

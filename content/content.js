@@ -1374,21 +1374,9 @@
       ctx.moveTo(xPos, oy);
       ctx.lineTo(xPos - arrowSize, oy + arrowSize / 2);
       ctx.stroke();
-      // X轴负端
-      ctx.beginPath(); ctx.moveTo(xNeg, oy);
-      ctx.lineTo(xNeg + arrowSize, oy - arrowSize / 2);
-      ctx.moveTo(xNeg, oy);
-      ctx.lineTo(xNeg + arrowSize, oy + arrowSize / 2);
-      ctx.stroke();
     }
     if (absY > arrowSize * 2) {
-      // Y轴正端
-      ctx.beginPath(); ctx.moveTo(ox, yPos);
-      ctx.lineTo(ox - arrowSize / 2, yPos - arrowSize);
-      ctx.moveTo(ox, yPos);
-      ctx.lineTo(ox + arrowSize / 2, yPos - arrowSize);
-      ctx.stroke();
-      // Y轴负端
+      // Y轴正端（屏幕坐标系下 Y 正方向朝下，数学正半轴朝上）
       ctx.beginPath(); ctx.moveTo(ox, yNeg);
       ctx.lineTo(ox - arrowSize / 2, yNeg + arrowSize);
       ctx.moveTo(ox, yNeg);
@@ -1447,22 +1435,20 @@
       ctx.setLineDash([]);
     }
     
-    // f) 轴标签（两端标注）
+    // f) 轴标签
     if (!isPreview && obj.labelX) {
       ctx.globalAlpha = alpha;
-      ctx.font = '12px sans-serif';
+      ctx.font = 'bold 20px sans-serif';
       ctx.textAlign = 'center';
-      ctx.textBaseline = 'top';
-      ctx.fillText(obj.labelX, xPos + 8, oy + 4);
-      ctx.fillText('-' + obj.labelX, xNeg - 8, oy + 4);
+      ctx.textBaseline = 'bottom';
+      ctx.fillText(obj.labelX, xPos + 12, oy - 4);
     }
     if (!isPreview && obj.labelY) {
       ctx.globalAlpha = alpha;
-      ctx.font = '12px sans-serif';
-      ctx.textAlign = 'right';
+      ctx.font = 'bold 20px sans-serif';
+      ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
-      ctx.fillText(obj.labelY, ox - 6, yPos + 8);
-      ctx.fillText('-' + obj.labelY, ox - 6, yNeg - 8);
+      ctx.fillText(obj.labelY, ox + 6, yPos + 12);
     }
     
     // g) 原点标记

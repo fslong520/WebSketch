@@ -566,6 +566,7 @@
       }
     });
     
+    textInput.addEventListener('pointerdown', e => e.stopPropagation());
     textInput.addEventListener('mousedown', e => e.stopPropagation());
     textInput.addEventListener('click', e => e.stopPropagation());
     textInput.addEventListener('focus', e => e.stopPropagation());
@@ -836,7 +837,8 @@
     canvas.addEventListener('pointerdown', handlePointerDown);
     canvas.addEventListener('pointermove', handlePointerMove);
     canvas.addEventListener('pointerup', handlePointerUp);
-    canvas.addEventListener('pointerleave', handlePointerUp);
+    canvas.addEventListener('pointerleave', function(e) { handlePointerUp(e); clearPreview(); });
+    canvas.addEventListener('mouseenter', function() { setCanvasCursor(state.tool === 'eraser' ? 'none' : state.tool === 'text' ? 'text' : state.tool === 'hand' ? 'default' : 'crosshair'); });
     canvas.addEventListener('dblclick', handleDoubleClick);
     document.addEventListener('keydown', handleKeyDown);
     window.addEventListener('resize', debounce(handleResize, 200));

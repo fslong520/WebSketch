@@ -604,6 +604,10 @@
   }
 
   function showTextInput(x, y, prefillText, editIndex) {
+    console.log('[DEBUG] showTextInput called at', x, y, 'editIndex:', editIndex);
+    console.log('[DEBUG] textInput element:', textInput);
+    console.log('[DEBUG] textInput before:', textInput.style.cssText);
+    
     if (editIndex !== undefined && editIndex !== null) {
       // 编辑模式：匹配原文样式，原地编辑
       state.editingTextIndex = editIndex;
@@ -643,7 +647,7 @@
     } else {
       // 新建模式：透明无框，使用工具栏当前设置
       state.editingTextIndex = null;
-      textInput.style.cssText = [
+      const newStyles = [
         'position:fixed',
         `left:${x}px`,
         `top:${y}px`,
@@ -666,10 +670,17 @@
         `color:${state.color}`,
         `line-height:1.2`
       ].join(';');
+      textInput.style.cssText = newStyles;
       textInput.textContent = '';
+      console.log('[DEBUG] textInput after:', textInput.style.cssText);
+      console.log('[DEBUG] textInput display:', textInput.style.display);
+      console.log('[DEBUG] textInput contentEditable:', textInput.contentEditable);
     }
     requestAnimationFrame(() => {
+      console.log('[DEBUG] requestAnimationFrame callback executing');
+      console.log('[DEBUG] textInput display in rAF:', textInput.style.display);
       textInput.focus();
+      console.log('[DEBUG] textInput focused');
       // 若有预填内容，全选以便覆写
       if (prefillText) {
         const range = document.createRange();

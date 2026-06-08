@@ -103,7 +103,7 @@
     save: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h12l2 2v12H5V5Z"/><path d="M8 5v6h8"/><path d="M8 19v-5h8v5"/></svg>',
     select: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2" ry="2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="4 3"/><circle cx="4" cy="4" r="2.5" fill="currentColor" stroke="none"/></svg>',
     mirrorH: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h16" stroke="currentColor" stroke-width="1.5"/><path d="m8 8-4 4 4 4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="m16 8 4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-    mirrorV: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v16" stroke="currentColor" stroke-width="1.5"/><path d="m8 16 4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="m8 8 4-4 4 4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+    mirrorV: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v16" stroke="currentColor" stroke-width="1.5"/><path d="m8 16 4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="m8 8 4-4 4 4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   };
 
   const TOOL_DEFS = [
@@ -500,7 +500,6 @@
         <div class="wph-setting-group"><label class="wph-label">透明</label><input type="range" class="wph-range" id="wph-opacity" min="0.1" max="1" step="0.1" value="${state.opacity}"><span class="wph-value" id="wph-opacity-value">${Math.round(state.opacity * 100)}%</span></div>
         <div class="wph-setting-group"><label class="wph-label">平滑</label><input type="range" class="wph-range" id="wph-smooth" min="0" max="5" step="1" value="0"><span class="wph-value" id="wph-smooth-value">0</span></div>
         <div class="wph-setting-group wph-font-group" style="display:none"><label class="wph-label">字号</label><input type="range" class="wph-font-size" min="12" max="72" value="${state.fontSize}"><span class="wph-value">${state.fontSize}px</span></div>
-        <div class="wph-pressure-indicator" title="压感笔已连接"><span class="wph-pressure-icon">✒️</span><span class="wph-pressure-text">压感</span></div>
         <div class="wph-divider"></div>
         <div class="wph-mode-group">
           ${MODE_DEFS.map(m => `<button class="wph-mode-btn${m.stateKey && state[m.stateKey] ? ' active' : ''}" id="${m.id}" ${m.stateKey ? `data-toggle="${m.stateKey}"` : `data-action="${m.action}"`} title="${m.label}" aria-label="${m.label}">${icon(m.icon)}<span>${m.label}</span></button>`).join('')}
@@ -604,9 +603,7 @@
   }
 
   function showTextInput(x, y, prefillText, editIndex) {
-    console.log('[DEBUG] showTextInput called at', x, y, 'editIndex:', editIndex);
-    console.log('[DEBUG] textInput element:', textInput);
-    console.log('[DEBUG] textInput before:', textInput.style.cssText);
+
     
     if (editIndex !== undefined && editIndex !== null) {
       // 编辑模式：匹配原文样式，原地编辑
@@ -672,15 +669,12 @@
       ].join(';');
       textInput.style.cssText = newStyles;
       textInput.textContent = '';
-      console.log('[DEBUG] textInput after:', textInput.style.cssText);
-      console.log('[DEBUG] textInput display:', textInput.style.display);
-      console.log('[DEBUG] textInput contentEditable:', textInput.contentEditable);
+
     }
     requestAnimationFrame(() => {
-      console.log('[DEBUG] requestAnimationFrame callback executing');
-      console.log('[DEBUG] textInput display in rAF:', textInput.style.display);
+
       textInput.focus();
-      console.log('[DEBUG] textInput focused');
+  
       // 若有预填内容，全选以便覆写
       if (prefillText) {
         const range = document.createRange();
@@ -1159,18 +1153,13 @@
           ctx.lineCap = 'round';
           ctx.lineJoin = 'round';
           const baseWidth = obj.lineWidth;
+          ctx.lineWidth = baseWidth;
+          ctx.beginPath();
+          ctx.moveTo(obj.points[0].x, obj.points[0].y);
           for (let i = 1; i < obj.points.length; i++) {
-            const p0 = obj.points[i - 1];
-            const p1 = obj.points[i];
-            const pressure = (p0.pressure != null && p1.pressure != null)
-              ? (p0.pressure + p1.pressure) / 2
-              : 0.5;
-            ctx.lineWidth = baseWidth * Math.max(0.3, pressure * 2.0);
-            ctx.beginPath();
-            ctx.moveTo(p0.x, p0.y);
-            ctx.lineTo(p1.x, p1.y);
-            ctx.stroke();
+            ctx.lineTo(obj.points[i].x, obj.points[i].y);
           }
+          ctx.stroke();
           ctx.restore();
         }
       } else if (obj.type === 'eraser') {
@@ -1191,18 +1180,13 @@
           ctx.lineCap = 'round';
           ctx.lineJoin = 'round';
           const baseWidth = obj.lineWidth;
+          ctx.lineWidth = baseWidth;
+          ctx.beginPath();
+          ctx.moveTo(obj.points[0].x, obj.points[0].y);
           for (let i = 1; i < obj.points.length; i++) {
-            const p0 = obj.points[i - 1];
-            const p1 = obj.points[i];
-            const pressure = (p0.pressure != null && p1.pressure != null)
-              ? (p0.pressure + p1.pressure) / 2
-              : 0.5;
-            ctx.lineWidth = baseWidth * Math.max(0.3, pressure * 2.0);
-            ctx.beginPath();
-            ctx.moveTo(p0.x, p0.y);
-            ctx.lineTo(p1.x, p1.y);
-            ctx.stroke();
+            ctx.lineTo(obj.points[i].x, obj.points[i].y);
           }
+          ctx.stroke();
           ctx.globalCompositeOperation = 'source-over';
           ctx.restore();
         }
@@ -1583,7 +1567,7 @@
     if (!textInput || textInput.style.display === 'block') return;
     
     if (state.tool === 'text') { 
-      console.log('[DEBUG] Text tool activated at', e.clientX, e.clientY);
+      e.preventDefault(); // 阻止 mousedown 冒泡，避免被捕获阶段监听器立即提交
       showTextInput(e.clientX, e.clientY); 
       return; 
     }
@@ -1678,11 +1662,10 @@
     if (state.tool === 'brush' || state.tool === 'eraser') {
       // 重置防抖
       state._smoothLastX = undefined;
-      // 创建新路径对象（含压感）
-      const pressure = e.pressure !== undefined ? e.pressure : 0.5;
+      // 创建新路径对象
       const newPathObj = {
         type: state.tool === 'brush' ? 'freehand' : 'eraser',
-        points: [{x: e.clientX, y: e.clientY, pressure: pressure}],
+        points: [{x: e.clientX, y: e.clientY}],
         color: state.color,
         lineWidth: state.tool === 'eraser' ? state.lineWidth * 3 : state.lineWidth,
         opacity: state.opacity
@@ -1845,7 +1828,7 @@
       const lastObj = state.objects[state.objects.length - 1];
       if (lastObj && (lastObj.type === 'freehand' || lastObj.type === 'eraser')) {
         const p = smoothPoint(e.clientX, e.clientY);
-        lastObj.points.push({x: p.x, y: p.y, pressure: e.pressure !== undefined ? e.pressure : 0.5});
+        lastObj.points.push({x: p.x, y: p.y});
         redrawCanvas();
       }
     } else if (['rect', 'circle', 'line', 'arrow', 'coord-grid'].includes(state.tool)) {

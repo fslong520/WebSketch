@@ -1569,7 +1569,7 @@
       return;
     }
     
-    if (textInput.style.display === 'block') return;
+    if (!textInput || textInput.style.display === 'block') return;
     
     if (state.tool === 'text') { 
       showTextInput(e.clientX, e.clientY); 

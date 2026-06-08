@@ -1572,6 +1572,7 @@
     if (!textInput || textInput.style.display === 'block') return;
     
     if (state.tool === 'text') { 
+      console.log('[DEBUG] Text tool activated at', e.clientX, e.clientY);
       showTextInput(e.clientX, e.clientY); 
       return; 
     }
